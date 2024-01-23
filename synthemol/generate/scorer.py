@@ -168,6 +168,33 @@ class ChempropScorer(Scorer):
             scalers=self.scalers,
         )
 
+class WaveLengthScorer(ChempropScorer):
+    def __init__(
+        self,
+        model_path: Path,
+        fingerprint_type: FINGERPRINT_TYPES | None = None,
+        device: torch.device = torch.device("cpu"),
+        wavelength_min: int = 400,
+        wavelength_max: int = 700,
+    ) -> None:
+        super().__init__(
+            model_path=model_path,
+            fingerprint_type=fingerprint_type,
+            device=device
+        )
+        self.wavelength_min = wavelength_min
+        self.wavelength_max = wavelength_max
+
+    def __call__(self, smiles: str) -> float:
+        wavelength = super().__call__(smiles=smiles)
+
+        if wavelength >= self.wavelength_min and wavelength <= self.wavelength_max:
+            score = 1
+        else:
+            score = 0
+
+        return score
+
 
 def create_scorer(
     score_type: SCORE_TYPES,
@@ -204,6 +231,12 @@ def create_scorer(
             raise ValueError("CLogP does not use fingerprints.")
 
         scorer = CLogPScorer()
+    elif score_type == "wavelength":
+        if model_path is None:
+            raise ValueError("Wavelength requires a model path.")
+
+        scorer = WaveLengthScorer(model_path=model_path, fingerprint_type=fingerprint_type, device=device)
+
     elif score_type == "chemprop":
         if model_path is None:
             raise ValueError("Chemprop requires a model path.")
