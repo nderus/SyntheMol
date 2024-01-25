@@ -328,7 +328,7 @@ RL Chemprop-RDKit
 synthemol \
     --score_paths rl/models/s_aureus_chemprop_rdkit rl/models/solubility_chemprop_rdkit \
     --score_types chemprop chemprop \
-    --fingerprint_types rdkit rdkit \
+    --score_fingerprint_types rdkit rdkit \
     --score_names 'S. aureus' 'Solubility' \
     --success_thresholds '>=0.5' '>=-4' \
     --chemical_spaces real wuxi \
@@ -354,7 +354,7 @@ RL MLP-RDKit
 synthemol \
     --score_paths rl/models/s_aureus_chemprop_rdkit rl/models/solubility_chemprop_rdkit \
     --score_types chemprop chemprop \
-    --fingerprint_types rdkit rdkit \
+    --score_fingerprint_types rdkit rdkit \
     --score_names 'S. aureus' 'Solubility' \
     --success_thresholds '>=0.5' '>=-4' \
     --chemical_spaces real wuxi \
@@ -378,7 +378,7 @@ MCTS
 synthemol \
     --score_paths rl/models/s_aureus_chemprop_rdkit rl/models/solubility_chemprop_rdkit \
     --score_types chemprop chemprop \
-    --fingerprint_types rdkit rdkit \
+    --score_fingerprint_types rdkit rdkit \
     --score_names 'S. aureus' 'Solubility' \
     --success_thresholds '>=0.5' '>=-4' \
     --chemical_spaces real wuxi \
@@ -615,4 +615,18 @@ chemfunc plot_tsne \
     --data_names chembl train_hits random chemprop_rdkit mcts rl_mlp_rdkit rl_chemprop_rdkit \
     --save_path rl/plots/selections_tsne.pdf \
     --point_size 2000
+```
+
+## Compute ADMET properties of selected molecules
+
+Compute ADMET properties of selected molecules using [ADMET-AI](https://github.com/swansonk14/admet_ai).
+
+Note: This requires installing ADMET-AI via `pip install admet_ai`.
+
+```bash
+for NAME in rl_chemprop_rdkit rl_mlp_rdkit mcts chemprop_rdkit random
+do
+admet_predict \
+    --data_path rl/selections/${NAME}/molecules.csv
+done
 ```
