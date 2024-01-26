@@ -39,6 +39,7 @@ DATASET_TYPES = Literal["classification", "regression"]
 RL_MODEL_TYPES = Literal["mlp_rdkit", "chemprop", "chemprop_rdkit"]
 RL_PREDICTION_TYPES = Literal["classification", "regression"]
 OPTIMIZATION_TYPES = Literal["maximize", "minimize"]
+WAVELENGTH_COLORS = Literal["blue", "green", "orange"]
 
 # Path where data files are stored
 with resources.path("synthemol", "resources") as resources_dir:
