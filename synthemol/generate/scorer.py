@@ -9,7 +9,7 @@ from rdkit.Chem.Crippen import MolLogP
 from rdkit.Chem.QED import qed
 
 
-from synthemol.constants import FINGERPRINT_TYPES, SCORE_TYPES
+from synthemol.constants import FINGERPRINT_TYPES, SCORE_TYPES, WAVELENGTH_COLORS
 from synthemol.generate.score_weights import ScoreWeights
 from synthemol.models import (
     chemprop_load,
@@ -19,6 +19,7 @@ from synthemol.models import (
     sklearn_predict_on_molecule_ensemble,
 )
 
+WAVELENGTH_DICT = {'blue': [450, 495], 'green': [495-570], 'yellow': [570, 590], 'orange': [590, 620]}
 
 class Scorer(ABC):
     """Base class for scoring molecules."""
@@ -174,8 +175,8 @@ class WaveLengthScorer(ChempropScorer):
         model_path: Path,
         fingerprint_type: FINGERPRINT_TYPES | None = None,
         device: torch.device = torch.device("cpu"),
-        wavelength_min: int = 400,
-        wavelength_max: int = 700,
+        wavelength_min: int = 420,
+        wavelength_max: int = 750,
     ) -> None:
         super().__init__(
             model_path=model_path,
@@ -201,6 +202,7 @@ def create_scorer(
     model_path: Path | None = None,
     fingerprint_type: FINGERPRINT_TYPES | None = None,
     device: torch.device = torch.device("cpu"),
+    wavelength_color: WAVELENGTH_COLORS | None = None,
 ) -> Scorer:
     """Creates a scorer object that scores a molecule.
 
@@ -234,8 +236,11 @@ def create_scorer(
     elif score_type == "wavelength":
         if model_path is None:
             raise ValueError("Wavelength requires a model path.")
-
-        scorer = WaveLengthScorer(model_path=model_path, fingerprint_type=fingerprint_type, device=device)
+        if wavelength_color is None:
+            scorer = WaveLengthScorer(model_path=model_path, fingerprint_type=fingerprint_type, device=device)
+        else:
+            wavelength_min, wavelength_max = WAVELENGTH_DICT[wavelength_color]
+            scorer = WaveLengthScorer(model_path=model_path, fingerprint_type=fingerprint_type, device=device, wavelength_min=wavelength_min, wavelength_max=wavelength_max)
 
     elif score_type == "chemprop":
         if model_path is None:
@@ -267,6 +272,7 @@ class MoleculeScorer:
         fingerprint_types: list[FINGERPRINT_TYPES | None] | None = None,
         device: torch.device = torch.device("cpu"),
         smiles_to_scores: dict[str, list[float]] | None = None,
+        wavelength_color: str | None = None,
     ) -> None:
         """Initialize the MoleculeScorer, which contains a collection of one or more individual scorers.
 
@@ -303,6 +309,7 @@ class MoleculeScorer:
                 model_path=model_path,
                 fingerprint_type=fingerprint_type,
                 device=device,
+                wavelength_color=wavelength_color,
             )
             for score_type, model_path, fingerprint_type in zip(
                 score_types, model_paths, fingerprint_types

@@ -75,6 +75,7 @@ def generate(
     wandb_log: bool = False,
     wandb_project_name: str = "synthemol",
     wandb_run_name: str | None = None,
+    wavelength_color: str | None = None, 
 ) -> None:
     """Generate molecules combinatorially using a search guided by a molecular property predictor.
 
@@ -140,6 +141,7 @@ def generate(
     :param wandb_log: Whether to log results to Weights & Biases.
     :param wandb_project_name: The name of the Weights & Biases project to log results to.
     :param wandb_run_name: The name of the Weights & Biases run to log results to.
+    :param wavelength color: The specific wavelength color, if none then visible range. 
     """
     # Convert score_model_paths to Path/None
     # TODO: change tapify to allow list[Path | Literal["None"] | None]
@@ -458,6 +460,7 @@ def generate(
         fingerprint_types=score_fingerprint_types,
         device=device,
         smiles_to_scores=building_block_smiles_to_scores,
+        wavelength_color = wavelength_color
     )
 
     # Set up RL model if applicable
@@ -517,6 +520,7 @@ def generate(
         rolling_average_weight=rolling_average_weight,
         replicate=replicate,
         wandb_log=wandb_log,
+        wavelength_color=wavelength_color,
     )
 
     # Search for molecules
