@@ -7,7 +7,7 @@ from tap import tapify
 def smiles_to_coords(smiles, cluster):
     #f = open(f'./{cluster}_top_new.com', 'w')
 
-    print('#p b3lyp/3-21G* opt=(calcfc,ts,noeigen) scrf=(solvent=water) td=(singlets,nstates=5)\n')
+    print('#p b3lyp/3-21G* opt=(calcfc,ts,noeigen) scrf=(solvent=water) td=(singlets,nstates=5) scf=maxcycle=1000\n')
     print(f' {cluster}_top\n')
     mol = Chem.MolFromSmiles(smiles)
     mol = Chem.AddHs(mol)
