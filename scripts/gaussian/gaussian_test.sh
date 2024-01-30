@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=12G
 #SBATCH --array=0
-#SBATCH --partition=gpu
+#SBATCH --partition=gpu,owners
 #SBATCH --gres gpu:1
 #SBATCH --output=output/synthemol/%a.out
 #SBATCH --error=error/synthemol/%a.err
@@ -20,7 +20,7 @@ source /home/users/jennxu23/.bashrc
 ml load python/3.9.0
 ml load chemistry gaussian
 ml load py-pandas/2.0.1_py39
-cd /home/users/jennxu23/synthemol/SyntheMol_private/scripts/gaussian
+cd /scratch/users/jennxu23/SyntheMol_private/scripts/gaussian
 
 # Capture the input and output files
 input_file="sumita.txt"
