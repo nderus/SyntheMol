@@ -41,7 +41,7 @@ while IFS=',', read -r cluster smiles; do
    if [ $? -eq 0 ]; then
       echo "starting gaussian: {$smiles}"
       g16 < generated_file.com > "${cluster}_log.log"
-      python3 calc_homolumo.py --inputfilename "${cluster}_log.log" --smiles_str "$smiles"> "$output_file"
+      python3 calc_homolumo.py --inputfilename "${cluster}_log.log" --smiles_str "$smiles">> "$output_file"
       echo "gaussian complete"
    fi
 done < "$input_file"
