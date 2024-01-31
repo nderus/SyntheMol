@@ -33,14 +33,16 @@ if [ ! -f "$input_file" ]; then
 fi
 
    
+CPUS=$(taskset -cp $$ | awk -F':' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
    
 while IFS=',', read -r cluster smiles; do
-   python3 build_gaussian_input.py --smiles "${smiles}" --cluster "${cluster}" > generated_file.com
+   python3 build_gaussian_input.py --smiles "${smiles}" --cluster "${cluster}" --CPU_IDs "${CPUS}"> generated_file.com
    
    if [ $? -eq 0 ]; then
-      echo "starting gaussian"
-      g16 < generated_file.com
-      #python3 calc_homolumo.py --inputfilename generated_log.log --smiles_str "$smiles"> "$output_file"
+      echo "starting gaussian: {$smiles}"
+      g16 < generated_file.com > "${cluster}_log.log"
+      python3 calc_homolumo.py --inputfilename "${cluster}_log.log" --smiles_str "$smiles"> "$output_file"
+      echo "gaussian complete"
    fi
 done < "$input_file"
 
