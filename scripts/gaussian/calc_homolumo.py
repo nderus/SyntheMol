@@ -1,48 +1,33 @@
 from tap import tapify
 
 def extract_energies(lines):
-    ground_state_energy = None
-    excited_state_energy = None
+    alphaGaps = []
+    excited_state_energies = []
     
     for line in lines:
-        if 'Excited State' in line:
-            # Extract the first excited state energy
+        if line.find("Alpha virt. eigenvalues --") >=0:
+            if prev_line.find("Alpha  occ. eigenvalues --") >= 0:
+                line_removed = line.replace("Alpha virt. eigenvalues --", " ")
+                prev_line_removed = prev_line.replace("Alpha  occ. eigenvalues --", " ")
+                line_StateInfo = line_removed.split()
+                prev_line_StateInfo = prev_line_removed.split()
+                alphaGap = 1240/abs(27.211*float(prev_line_StateInfo[-1]) - float(line_StateInfo[0]))
+                alphaGaps.append(alphaGap)
+        prev_line = line
+
+        if ' Excited State   1:' in line:
             parts = line.split()
-            excited_state_energy = float(parts[4].replace('eV', ''))
-
-            # Convert from eV to Hartrees (1 eV = 0.0367493 Hartrees)
-            excited_state_energy = parts[6]
-            break
-        else:
-           excited_state_energy = -1
+            excited_state_energies.append(float(parts[6]))
 
 
-    return excited_state_energy
-
-def calculate_emission_wavelength(excited_state_energy):
-    # Planck's constant (in Joule seconds)
-    h = 6.62607015e-34 
-
-    # Speed of light (in meters per second)
-    c = 299792458 
-
-    # Energy difference (in Joules)
-    delta_E = (excited_state_energy ) * 4.3597447222071e-18
-
-    # Wavelength (in meters)
-    wavelength = h * c / delta_E 
-
-    # Convert wavelength to nanometers
-    wavelength_nm = wavelength * 1e9
-
-    return wavelength_nm
+    return excited_state_energies, alphaGaps
 
  
 def main(inputfilename, smiles_str):
     f = open(inputfilename, 'r')
     lines = f.readlines()
-    excited_state_energy = extract_energies(lines)
-    print(smiles_str, excited_state_energy)
+    excited_state_energies, alphaGaps = extract_energies(lines)
+    print(smiles_str, excited_state_energies, alphaGaps)
 
 if __name__ == "__main__":
     tapify(main)
