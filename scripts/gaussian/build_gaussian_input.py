@@ -6,11 +6,12 @@ from tap import tapify
 
 def smiles_to_coords(smiles, cluster, CPU_IDs):
     #f = open(f'./{cluster}_top_new.com', 'w')
-    cpu = []    
+    cpus = []    
     if ',' in CPU_IDs:
-	cpus = CPU_IDs.split(',')
+         cpus = CPU_IDs.split(',')
     elif '-' in CPU_IDs:
-	cpus = CPU_IDs.split('-') 
+         cpus = CPU_IDs.split('-')
+  
     print('%Mem=8GB')
     print(f'%CPU={CPU_IDs}')
     print(f'%GPUCPU=0={cpus[0]}')
