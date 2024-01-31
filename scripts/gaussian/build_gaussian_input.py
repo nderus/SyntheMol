@@ -2,15 +2,12 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 import pandas as pd
 from tap import tapify
+import re
 
 
 def smiles_to_coords(smiles, cluster, CPU_IDs):
     #f = open(f'./{cluster}_top_new.com', 'w')
-    cpus = []
-    delims = ['-', ',']
-    for delim in delims:
-	cpus = CPU_IDs.split(delim)
-  
+    cpus = re.split('-|,', CPU_IDs)
     print('%Mem=8GB')
     print(f'%CPU={CPU_IDs}')
     print(f'%GPUCPU=0={cpus[0]}')
