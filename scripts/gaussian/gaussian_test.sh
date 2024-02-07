@@ -4,8 +4,8 @@
 #
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=12G
+#SBATCH --cpus-per-task=12
+#SBATCH --mem=48G
 #SBATCH --array=0
 #SBATCH --partition=gpu,owners
 #SBATCH --gres gpu:1
@@ -14,7 +14,7 @@
 #SBATCH --time=48:00:00
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=jennxu23@stanford.edu
-
+#SBATCH --constraint=GPU_MEM:32GB
 
 source /home/users/jennxu23/.bashrc
 ml load python/3.9.0
@@ -23,8 +23,8 @@ ml load py-pandas/2.0.1_py39
 cd /scratch/users/jennxu23/SyntheMol_private/scripts/gaussian
 
 # Capture the input and output files
-input_file="sumita.txt"
-output_file="sumita_out.log"
+input_file="fluorescence.txt"
+output_file="fluorescence_out.txt"
 
 # Check if the SMILES and properties file exists
 if [ ! -f "$input_file" ]; then

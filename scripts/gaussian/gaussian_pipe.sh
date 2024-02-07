@@ -19,7 +19,8 @@ fi
 # Loop through each line in the file and process SMILES and property using the Python script
 while IFS=',', read -r cluster smiles; do
    python3 build_gaussian_input.py --smiles "$smiles" --cluster "$cluster" > generated_file.com
-   #cat generated_file.com
+   sed -i "s/%GPUCPU=0=0/%GPUCPU=0=$cluster/" generated_file.com
+   cat generated_file.com
    
    if [ $? -eq 0 ]; then
       echo "starting gaussian"

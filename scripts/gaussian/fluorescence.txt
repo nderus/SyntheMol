@@ -1,0 +1,1 @@
+cy3,CN1C2=CC=C(C=C2C(C)(C)\C1=C/C=C/C1=[N+](CCCCCC(O)=O)C2=C(C=C(C=C2)S([O-])(=O)=O)C1(C)C)S([O-])(=O)=O

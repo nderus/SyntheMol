@@ -1,0 +1,2 @@
+1,OC(CCCCCN(CC)C1C=C2OC(=O)C(C(=O)NCCS(=O)([O-])=O)=CC2=CC=1)=O
+
