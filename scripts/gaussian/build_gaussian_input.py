@@ -7,10 +7,8 @@ import re
 
 def smiles_to_coords(smiles, cluster, CPU_IDs):
     #f = open(f'./{cluster}_top_new.com', 'w')
-    cpus = re.split('-|,', CPU_IDs)
-    print('%Mem=24GB')
+    print('%Mem=8GB')
     print(f'%CPU={CPU_IDs}')
-    print(f'%GPUCPU=0,1={cpus[0]},{cpus[1]}')
     print('#p b3lyp/3-21G* opt=(calcfc,ts,noeigen,maxcycle=1000) scrf=(solvent=water) td=(singlets,nstates=5)\n')
     print(f' {cluster}_top\n')
     mol = Chem.MolFromSmiles(smiles)

@@ -35,15 +35,16 @@ fi
    
 CPUS=$(taskset -cp $$ | awk -F':' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
    
-while IFS=',', read -r cluster smiles; do
-   python3 build_gaussian_input.py --smiles "${smiles}" --cluster "${cluster}" --CPU_IDs "${CPUS}"> generated_file.com
+read -r cluster smiles < "$input_file"
+python3 build_gaussian_input.py --smiles "${smiles}" --cluster "${cluster}" --CPU_IDs "${CPUS}"> generated_file.com
    
-   if [ $? -eq 0 ]; then
-      echo "starting gaussian: {$smiles}"
-      g16 < generated_file.com > "${cluster}_log.log"
-      python3 calc_homolumo.py --inputfilename "${cluster}_log.log" --smiles_str "$smiles">> "$output_file"
-      echo "gaussian complete"
-   fi
-done < "$input_file"
+if [ $? -eq 0 ]; then
+   echo "starting gaussian: {$smiles}"
+   g16 < generated_file.com > "${cluster}_log.log"
+   python3 calc_homolumo.py --inputfilename "${cluster}_log.log" --smiles_str "$smiles">> "$output_file"
+   echo "gaussian complete"
+fi
+
+done 
 
 echo "Processing complete."
