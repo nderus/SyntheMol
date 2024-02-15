@@ -23,8 +23,8 @@ ml load py-pandas/2.0.1_py39
 cd /scratch/users/jennxu23/SyntheMol_private/scripts/gaussian
 
 # Capture the input and output files
-input_file="fluorescence.txt"
-output_file="fluorescence_out.txt"
+input_file="sumita_2.txt"
+output_file="sumiat_2_out.txt"
 
 # Check if the SMILES and properties file exists
 if [ ! -f "$input_file" ]; then
@@ -43,8 +43,6 @@ if [ $? -eq 0 ]; then
    g16 < generated_file.com > "${cluster}_log.log"
    python3 calc_homolumo.py --inputfilename "${cluster}_log.log" --smiles_str "$smiles">> "$output_file"
    echo "gaussian complete"
-fi
-
-done 
+fi 
 
 echo "Processing complete."
