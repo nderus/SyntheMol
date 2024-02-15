@@ -23,8 +23,8 @@ ml load py-pandas/2.0.1_py39
 cd /scratch/users/jennxu23/SyntheMol_private/scripts/gaussian
 
 # Capture the input and output files
-input_file="sumita_2.txt"
-output_file="sumiat_2_out.txt"
+input_file="chemfluor.txt"
+output_file="chemfluor_out.txt"
 
 # Check if the SMILES and properties file exists
 if [ ! -f "$input_file" ]; then
@@ -34,8 +34,8 @@ fi
 
    
 CPUS=$(taskset -cp $$ | awk -F':' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
-   
-read -r cluster smiles < "$input_file"
+
+IFS=',' read -r cluster smiles < "$input_file"
 python3 build_gaussian_input.py --smiles "${smiles}" --cluster "${cluster}" --CPU_IDs "${CPUS}"> generated_file.com
    
 if [ $? -eq 0 ]; then
