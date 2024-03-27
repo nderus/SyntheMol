@@ -30,7 +30,7 @@ from synthemol.reactions import (
 )
 from synthemol.generate.generator import Generator
 from synthemol.generate.scorer import MoleculeScorer
-from synthemol.generate.utils import parse_success_threshold, save_generated_molecules
+from synthemol.generate.utils import parse_comparator_string, save_generated_molecules
 
 
 def generate(
@@ -57,7 +57,7 @@ def generate(
     rolling_average_weight: float = 0.98,
     rl_model_type: RL_MODEL_TYPES = "mlp_rdkit",
     rl_model_paths: list[Path] | None = None,
-    rl_prediction_type: RL_PREDICTION_TYPES = "classification",
+    rl_prediction_type: RL_PREDICTION_TYPES = "classification",  # TODO: allow multiple prediction types, one per rl model
     rl_base_temperature: float = 0.1,
     rl_temperature_similarity_target: float = 0.6,
     rl_train_frequency: int = 10,
@@ -95,7 +95,7 @@ def generate(
     :param score_names: List of names for each score. If None, scores will be named "Score 1", "Score 2", etc.
     :param base_score_weights: Initial weights for each score for defining the reward function.
         If None, defaults to equal weights for each score.
-    :param success_thresholds: The threshold for each score for defining success of the form "> 0.5".
+    :param success_thresholds: The threshold for each score for defining success of the form ">= 0.5".
         If provided, the score weights will be dynamically set to maximize joint success
         across all scores.
     :param chemical_spaces: A tuple of names of reaction sets to use. 'real' = Enamine REAL Space reactions.
@@ -211,7 +211,7 @@ def generate(
     # Set up score weights, with option for dynamic weights if success_thresholds is provided
     if success_thresholds is not None:
         success_comparators = tuple(
-            parse_success_threshold(success_threshold)
+            parse_comparator_string(success_threshold)
             for success_threshold in success_thresholds
         )
         score_weights = ScoreWeights(
