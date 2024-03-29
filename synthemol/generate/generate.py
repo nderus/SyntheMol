@@ -412,6 +412,7 @@ def generate(
                 "rl_train_epochs": rl_train_epochs,
                 "rl_extended_evaluation": rl_extended_evaluation,
                 "h2o_solvents": h2o_solvents,
+                "wavelenght_color": wavelength_color,
                 "optimization": optimization,
                 "rng_seed": rng_seed,
                 "no_building_block_diversity": no_building_block_diversity,
