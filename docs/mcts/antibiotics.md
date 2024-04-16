@@ -194,48 +194,51 @@ Here, we apply SyntheMol to generate molecules using a Monte Carlo tree search (
 Chemprop
 ```bash
 synthemol \
+    --search_type mcts \
     --score_type chemprop \
-    --score_path data/Models/antibiotic_chemprop \
+    --score_model_path data/Models/antibiotic_chemprop \
     --building_blocks_path data/Models/antibiotic_chemprop/building_blocks.csv \
     --building_blocks_score_column chemprop_ensemble_preds \
     --building_blocks_id_column Reagent_ID \
-    --reaction_to_building_blocks_path data/Data/4_real_space/reaction_to_building_blocks.pkl \
+    --reaction_to_building_blocks_path data/Data/4_real_space/reaction_to_building_blocks_filtered.pkl \
     --save_dir data/Data/6_generations_chemprop \
     --max_reactions 1 \
     --n_rollout 20000 \
-    --replicate
+    --replicate_mcts
 ```
 
 Chemprop-RDKit
 ```bash
 synthemol \
+    --search_type mcts \
     --score_type chemprop \
-    --score_path data/Models/antibiotic_chemprop_rdkit \
+    --score_model_path data/Models/antibiotic_chemprop_rdkit \
     --building_blocks_path data/Models/antibiotic_chemprop_rdkit/building_blocks.csv \
     --building_blocks_score_column chemprop_rdkit_ensemble_preds \
     --building_blocks_id_column Reagent_ID \
-    --reaction_to_building_blocks_path data/Data/4_real_space/reaction_to_building_blocks.pkl \
+    --reaction_to_building_blocks_path data/Data/4_real_space/reaction_to_building_blocks_filtered.pkl \
     --save_dir data/Data/7_generations_chemprop_rdkit \
     --fingerprint_type rdkit \
     --max_reactions 1 \
     --n_rollout 20000 \
-    --replicate
+    --replicate_mcts
 ```
 
 Random forest
 ```bash
 synthemol \
+    --search_type mcts \
     --score_type random_forest \
-    --score_path data/Models/antibiotic_random_forest \
+    --score_model_path data/Models/antibiotic_random_forest \
     --building_blocks_path data/Models/antibiotic_random_forest/building_blocks.csv \
     --building_blocks_score_column random_forest_rdkit_ensemble_preds \
     --building_blocks_id_column Reagent_ID \
-    --reaction_to_building_blocks_path data/Data/4_real_space/reaction_to_building_blocks.pkl \
+    --reaction_to_building_blocks_path data/Data/4_real_space/reaction_to_building_blocks_filtered.pkl \
     --save_dir data/Data/8_generations_random_forest \
     --fingerprint_type rdkit \
     --max_reactions 1 \
     --n_rollout 20000 \
-    --replicate
+    --replicate_mcts
 ```
 
 

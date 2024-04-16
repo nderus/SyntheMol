@@ -42,6 +42,22 @@ FEATURES_SIZE_MAPPING = {"rdkit": 200, "morgan": 2048}
 OPTIMIZATION_TYPES = Literal["maximize", "minimize"]
 WAVELENGTH_COLORS = Literal["blue", "green", "orange"]
 H2O_FEATURES = [0.681, 0.997, 1.062, 0.025] # SP, SdP, SA, SB from https://pubs.acs.org/doi/10.1021/acs.jcim.0c01203
+OLD_REACTION_ORDER = [
+    275592,
+    22,
+    11,
+    527,
+    2430,
+    2708,
+    240690,
+    2230,
+    2718,
+    40,
+    1458,
+    271948,
+    27,
+]
+OLD_REACTIONS = set(OLD_REACTION_ORDER)
 
 # Path where data files are stored
 with resources.path("synthemol", "resources") as resources_dir:

@@ -326,7 +326,7 @@ RL Chemprop-RDKit
 
 ```bash
 synthemol \
-    --score_paths rl/models/s_aureus_chemprop_rdkit rl/models/solubility_chemprop_rdkit \
+    --score_model_paths rl/models/s_aureus_chemprop_rdkit rl/models/solubility_chemprop_rdkit \
     --score_types chemprop chemprop \
     --score_fingerprint_types rdkit rdkit \
     --score_names 'S. aureus' 'Solubility' \
@@ -343,6 +343,7 @@ synthemol \
     --rl_prediction_type regression \
     --use_gpu \
     --num_workers 8 \
+    --replicate_rl \
     --wandb_project_name synthemol_rl \
     --wandb_run_name rl_chemprop_rdkit_s_aureus_solubility_dynamic_weights_real_wuxi \
     --wandb_log
@@ -352,7 +353,7 @@ RL MLP-RDKit
 
 ```bash
 synthemol \
-    --score_paths rl/models/s_aureus_chemprop_rdkit rl/models/solubility_chemprop_rdkit \
+    --score_model_paths rl/models/s_aureus_chemprop_rdkit rl/models/solubility_chemprop_rdkit \
     --score_types chemprop chemprop \
     --score_fingerprint_types rdkit rdkit \
     --score_names 'S. aureus' 'Solubility' \
@@ -367,6 +368,7 @@ synthemol \
     --rl_model_type mlp_rdkit \
     --rl_model_paths rl/models/s_aureus_mlp_rdkit/fold_0/model_0/model.pt rl/models/solubility_mlp_rdkit/fold_0/model_0/model.pt \
     --rl_prediction_type regression \
+    --replicate_rl \
     --wandb_project_name synthemol_rl \
     --wandb_run_name rl_mlp_rdkit_s_aureus_solubility_dynamic_weights_real_wuxi \
     --wandb_log
@@ -376,7 +378,7 @@ MCTS
 
 ```bash
 synthemol \
-    --score_paths rl/models/s_aureus_chemprop_rdkit rl/models/solubility_chemprop_rdkit \
+    --score_model_paths rl/models/s_aureus_chemprop_rdkit rl/models/solubility_chemprop_rdkit \
     --score_types chemprop chemprop \
     --score_fingerprint_types rdkit rdkit \
     --score_names 'S. aureus' 'Solubility' \
@@ -388,6 +390,7 @@ synthemol \
     --save_dir rl/generations/mcts_s_aureus_solubility_dynamic_weights_real_wuxi \
     --n_rollout 10000 \
     --search_type mcts \
+    --replicate_rl \
     --wandb_project_name synthemol_rl \
     --wandb_run_name mcts_s_aureus_solubility_dynamic_weights_real_wuxi \
     --wandb_log
@@ -428,10 +431,10 @@ chemprop_predict \
     --no_cache_mol
 done
 
-python -c "import pandas as pd; \
-data = pd.read_csv('rl/screened/chemprop_rdkit_${FILE_NAME}_s_aureus.csv'); \
-sol = pd.read_csv('rl/screened/chemprop_rdkit_${FILE_NAME}_solubility.csv'); \
-data['solubility'] = sol['solubility']; \
+python -c "import pandas as pd
+data = pd.read_csv('rl/screened/chemprop_rdkit_${FILE_NAME}_s_aureus.csv')
+sol = pd.read_csv('rl/screened/chemprop_rdkit_${FILE_NAME}_solubility.csv')
+data['solubility'] = sol['solubility']
 data.to_csv('rl/screened/chemprop_rdkit_${FILE_NAME}.csv', index=False)"
 
 done
@@ -473,7 +476,7 @@ python scripts/data/select_molecules.py \
     --save_analysis_path rl/selections/${MODEL}/analysis.csv \
     --score_columns "S. aureus" "Solubility" \
     --score_comparators ">=0.5" ">=-4" \
-    --novelty_threshold 0.6 \
+    --novelty_thresholds 0.6 0.6 \
     --similarity_threshold 0.6 \
     --select_num 150 \
     --sort_column "S. aureus" \
@@ -536,10 +539,10 @@ Note: The WuXi random 7M has 105,055 (1.50%) with S. aureus >= 0.5; 1,868,378 (2
 Combine REAL and WuXi hits.
 
 ```bash
-python -c "import pandas as pd; \
-pd.concat([ \
-    pd.read_csv('rl/screened/chemprop_rdkit_random_real_14m_hits.csv').assign(chemical_space='real'), \
-    pd.read_csv('rl/screened/chemprop_rdkit_random_wuxi_7m_hits.csv').assign(chemical_space='wuxi') \
+python -c "import pandas as pd
+pd.concat([
+    pd.read_csv('rl/screened/chemprop_rdkit_random_real_14m_hits.csv').assign(chemical_space='real'),
+    pd.read_csv('rl/screened/chemprop_rdkit_random_wuxi_7m_hits.csv').assign(chemical_space='wuxi')
 ]).to_csv('rl/screened/chemprop_rdkit_random_real_wuxi_21m_hits.csv', index=False)"
 ```
 
@@ -571,7 +574,7 @@ python scripts/data/select_molecules.py \
     --save_analysis_path rl/selections/chemprop_rdkit/analysis.csv \
     --score_columns "s_aureus_activity" "solubility" \
     --score_comparators ">=0.5" ">=-4" \
-    --novelty_threshold 0.6 \
+    --novelty_thresholds 0.6 0.6 \
     --similarity_threshold 0.6 \
     --select_num 150 \
     --sort_column "s_aureus_activity" \
@@ -581,10 +584,12 @@ python scripts/data/select_molecules.py \
 Merge random molecules (no filtering).
 
 ```bash
-python -c "import pandas as pd; \
-pd.concat([ \
-    pd.read_csv('rl/screened/chemprop_rdkit_random_real_100.csv').assign(chemical_space='real'), \
-    pd.read_csv('rl/screened/chemprop_rdkit_random_wuxi_50.csv').assign(chemical_space='wuxi') \
+mkdir rl/selections/random
+
+python -c "import pandas as pd
+pd.concat([
+    pd.read_csv('rl/screened/chemprop_rdkit_random_real_100.csv').assign(chemical_space='real'),
+    pd.read_csv('rl/screened/chemprop_rdkit_random_wuxi_50.csv').assign(chemical_space='wuxi')
 ]).to_csv('rl/selections/random/molecules.csv', index=False)"
 ```
 
@@ -629,4 +634,81 @@ do
 admet_predict \
     --data_path rl/selections/${NAME}/molecules.csv
 done
+```
+
+## Merge selections into a single file
+
+Merge all selections into a single file.
+
+```bash
+python -c "import pandas as pd
+
+# Combine all selections
+data = pd.concat([
+    pd.read_csv('rl/selections/rl_chemprop_rdkit/molecules.csv').assign(method='rl_chemprop_rdkit'),
+    pd.read_csv('rl/selections/rl_mlp_rdkit/molecules.csv').assign(method='rl_mlp_rdkit'),
+    pd.read_csv('rl/selections/mcts/molecules.csv').assign(method='mcts'),
+    pd.read_csv('rl/selections/chemprop_rdkit/molecules.csv').assign(method='chemprop_rdkit'),
+    pd.read_csv('rl/selections/random/molecules.csv').assign(method='random')
+]).reset_index(drop=True)
+print(data['method'].value_counts())
+
+# Combine chemical space labels into one column
+data['chemical_space'] = data['chemical_space'].combine_first(data['reaction_1_chemical_space'])
+
+# Save
+data.to_csv('rl/selections/all_molecules.csv', index=False)"
+```
+
+## Separate selections by chemical space
+
+Separate selections by chemical space.
+
+```bash
+python -c "import pandas as pd
+data = pd.read_csv('rl/selections/all_molecules.csv')
+for chemical_space in ['real', 'wuxi']:
+    space_data = data[data['chemical_space'] == chemical_space]
+    print(f'{chemical_space}: {len(space_data):,}')
+    space_data.to_csv(f'rl/selections/{chemical_space}_molecules.csv', index=False)"
+```
+
+## Select final candidates based on availability and ClinTox score
+
+Select 50 molecules from each model from the available molecules ranked by ClinTox score (lowest to highest), except for random where random molecules are selected. Note that `rl/selections/all_molecules.csv` has been modified to include a column indicating which molecules are available based on quotes from Enamine and WuXi.
+
+```bash
+python -c "import pandas as pd
+
+# Load molecules
+data = pd.read_csv('rl/selections/all_molecules.csv')
+
+# Get available molecules
+available = data[data['available']]
+
+# Select top 50 molecules by ClinTox score for each method (except random)
+selected = []
+for method in sorted(data['method'].unique()):
+    method_data = available[available['method'] == method]
+
+    if method == 'random':
+        real_data = method_data[method_data['chemical_space'] == 'real']
+        wuxi_data = method_data[method_data['chemical_space'] == 'wuxi']
+        method_data = pd.concat([real_data.sample(33, random_state=0), wuxi_data.sample(17, random_state=0)])
+    else:
+        method_data = method_data.sort_values('ClinTox').head(50)
+
+    selected.append(method_data)
+
+selected = pd.concat(selected)
+
+# Save selected molecules
+selected.to_csv('rl/selections/all_molecules_available_clintox.csv', index=False)
+
+# Save selected molecules by chemical space
+for chemical_space in sorted(selected['chemical_space'].unique()):
+    selected[selected['chemical_space'] == chemical_space].to_csv(
+        f'rl/selections/{chemical_space}_molecules_available_clintox.csv',
+        index=False
+    )"
 ```

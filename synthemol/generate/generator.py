@@ -294,16 +294,6 @@ class Generator:
             # Run reaction
             products = reaction.run_reactants(molecules)
 
-            if len(products) == 0:
-                raise ValueError("Reaction failed to produce products.")
-
-            assert all(len(product) == 1 for product in products)
-
-            # Convert product mols to SMILES (and remove Hs)
-            products = [
-                Chem.MolToSmiles(Chem.RemoveHs(product[0])) for product in products
-            ]
-
             # Filter out products that have already been created and deduplicate
             products = list(
                 dict.fromkeys(
@@ -315,7 +305,7 @@ class Generator:
             # Create reaction log
             reaction_log = ReactionLog(
                 chemical_space=reaction.chemical_space,
-                reaction_id=reaction.id,
+                reaction_id=reaction.reaction_id,
                 reactant_ids=tuple(
                     self.chemical_space_to_building_block_smiles_to_id[
                         reaction.chemical_space
