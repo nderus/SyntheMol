@@ -57,6 +57,48 @@ class CLogPScorer(Scorer):
         """
         return MolLogP(Chem.MolFromSmiles(smiles))
 
+class sp2NetworkScorer(Scorer):
+    """Scores molecules by measuring their longest connected path of sp2 atoms"""
+
+    def __call__(self, smiles: str) -> float:
+        """Scores a molecule with the largest sp2 network of atoms. 
+
+        :param smiles: A SMILES string.
+        :return: The score of the molecule.
+        """
+        mol = Chem.MolFromSmiles(smiles)
+        sp2_atoms_idxs = {
+            atom.GetIdx() for atom in mol.GetAtoms() if atom.GetHybridization() == Chem.rdchem.HybridizationType.SP2
+        }
+
+        # Store neighbors of each SP2 atom to reduce the number of method calls
+        sp2_neighbors = {
+            idx: [
+                neighbor.GetIdx()
+                for neighbor in mol.GetAtomWithIdx(idx).GetNeighbors()
+                if neighbor.GetIdx() in sp2_atoms_idxs
+            ]
+            for idx in sp2_atoms_idxs
+        }
+
+        visited_global = set()
+        max_count = 0
+
+        def dfs(atom_idx: int, visited_local: set) -> int:
+            visited_local.add(atom_idx)
+            visited_global.add(atom_idx)
+
+            for neighbor_idx in sp2_neighbors[atom_idx]:
+                if neighbor_idx not in visited_local:
+                    dfs(neighbor_idx, visited_local)
+
+            return len(visited_local)
+
+        for atom_idx in sp2_atoms_idxs:
+            if atom_idx not in visited_global:
+                max_count = max(max_count, dfs(atom_idx, set()))
+
+        return max_count
 
 class SKLearnScorer(Scorer):
     """Scores molecules using a scikit-learn model or ensemble of models."""
@@ -241,6 +283,15 @@ def create_scorer(
             raise ValueError("CLogP does not use fingerprints.")
 
         scorer = CLogPScorer()
+    elif score_type == "sp2_network":
+        if model_path is not None:
+            raise ValueError("sp2 length does not use a model path.")
+
+        if fingerprint_type is not None:
+            raise ValueError("sp2 length does not use fingerprints.")
+        
+        scorer = sp2NetworkScorer()
+
     elif score_type == "wavelength":
         if model_path is None:
             raise ValueError("Wavelength requires a model path.")
