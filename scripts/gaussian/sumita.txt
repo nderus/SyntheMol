@@ -1,6 +1,0 @@
-1,Nc1nonc1C(=O)Nc1ccc2[nH]ncc2c1
-2,Cn1c(C(=O)Nc2cccc(F)c2F)nc2ccccc21
-3,N/C=C/c1c(O)cccc1O
-4,Nc1n[nH]nc1-c1cccnc1
-5,Cn1cc(/C=N/n2nnc3ccccc32)c2ccccc12
-

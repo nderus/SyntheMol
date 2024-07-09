@@ -1,8 +1,0 @@
-[H]C1(C)CC(C)(C)NC2=C(C3=C(C=C12)C(=C1CC2([H])C(=NC(C)(C)CC2([H])C)C([H])(C1([H])O3)S(O)(=O)=O)C1=C(C=CC(SC\C(O)=N/C)=C1)C(O)=O)S(O)(=O)=O [] []
-CN1C2=CC=C(C=C2C(C)(C)\C1=C/C=C/C1=[N+](CCCCCC(O)=O)C2=C(C=C(C=C2)S([O-])(=O)=O)C1(C)C)S([O-])(=O)=O [] []
-Nc4ccc3c(c1ccc(cc1C(O)=O)C(O)=O)c2ccc(=N)c(c2oc3c4S(O)(=O)=O)S(O)(=O)=O [] []
-CCN(CC)C1=CC2=C(C=C1)C(=C3C=CC(=[N+](CC)CC)C=C3O2)C4=CC=CC=C4C(=O)O.[Cl-] [] []
-C1=CC=C2C(=C1)C(=O)OC23C4=C(C=C(C=C4)O)OC5=C3C=CC(=C5)O [] []
-CN1C2=CC=C(C=C2C(C)(C)\C1=C/C=C/C1=[N+](CCCCCC(O)=O)C2=C(C=C(C=C2)S([O-])(=O)=O)C1(C)C)S([O-])(=O)=O [] []
-CN1C2=CC=C(C=C2C(C)(C)\C1=C/C=C/C1=[N+](CCCCCC(O)=O)C2=C(C=C(C=C2)S([O-])(=O)=O)C1(C)C)S([O-])(=O)=O [] []
-CN1C2=CC=C(C=C2C(C)(C)\C1=C/C=C/C1=[N+](CCCCCC(O)=O)C2=C(C=C(C=C2)S([O-])(=O)=O)C1(C)C)S([O-])(=O)=O [] []
