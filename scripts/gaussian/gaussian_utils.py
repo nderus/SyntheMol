@@ -1,6 +1,6 @@
 from pathlib import Path
 
-def generate_gaussian_input(xyz_path, output_path, job_name="job", solvent="Water", nstates=10):
+def generate_gaussian_input(xyz_path, output_path, CPU_IDs, job_name="job", solvent="Water", nstates=10):
     xyz_path = Path(xyz_path)
     output_path = Path(output_path)
 
@@ -19,6 +19,8 @@ def generate_gaussian_input(xyz_path, output_path, job_name="job", solvent="Wate
 
     # Write combined Gaussian input
     with open(output_path, "w") as f:
+        f.write('%Mem=8GB\n')
+        f.write(f'%CPU={CPU_IDs}\n')
         f.write(f"%chk={chk_name}\n")
         f.write(f"{opt_route}\n\n")
         f.write(f"{job_name} - geometry optimization\n\n")
@@ -26,6 +28,8 @@ def generate_gaussian_input(xyz_path, output_path, job_name="job", solvent="Wate
         for atom in atoms:
             f.write(atom + "\n")
         f.write("\n--Link1--\n")
+        f.write('%Mem=8GB\n')
+        f.write(f'%CPU={CPU_IDs}\n')
         f.write(f"%chk={chk_name}\n")
         f.write(f"{td_route}\n\n")
         f.write(f"{job_name} - TD-DFT\n\n\n")

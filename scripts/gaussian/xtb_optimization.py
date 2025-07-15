@@ -6,6 +6,7 @@ from berny import Berny, geomlib, angstrom
 import os
 from tap import tapify
 from pathlib import Path
+from gaussian_utils import generate_gaussian_input
 
 
 def write_initial_xyz_file(smiles, in_path):
@@ -73,13 +74,15 @@ def write_optimized_xyz_file(trajectory, elements, output_path):
 
 
  
-def generate_optimal_xyz(smiles, input_xyz_path):
+def generate_optimal_xyz(id, smiles, input_xyz_path, cpu_ids=""):
     write_initial_xyz_file(smiles, input_xyz_path)
     directory = os.path.dirname(input_xyz_path)
     filename = os.path.basename(input_xyz_path)
     output_path = Path(directory) / f"optimized_{filename}"
     trajectory, elements = optimize_molecule(input_xyz_path)
     write_optimized_xyz_file(trajectory, elements, output_path)
+    generate_gaussian_input(output_path, f"gaussian_{id}.com", CPU_IDs = cpu_ids, job_name=f'fluor_{id}')
+    
     return trajectory, elements
 
 
