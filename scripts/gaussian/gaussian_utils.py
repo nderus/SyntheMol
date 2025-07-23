@@ -14,7 +14,7 @@ def generate_gaussian_input(xyz_path, output_path, CPU_IDs, job_name="job", solv
     # Build input sections
     chk_name = f"{job_name}.chk"
 
-    opt_route = f"#p B3LYP/6-31+G(d) Opt SCRF=(IEFPCM, solvent={solvent})"
+    opt_route = f"#p B3LYP/6-31+G(d) opt freq SCRF=(IEFPCM, solvent={solvent})"
     td_route  = f"#p TD(NStates={nstates}) CAM-B3LYP/6-31+G(d) SCRF=(IEFPCM, solvent={solvent}) Geom=AllCheck Guess=Read"
 
     # Write combined Gaussian input
