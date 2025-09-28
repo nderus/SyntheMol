@@ -717,3 +717,63 @@ for chemical_space in sorted(selected['chemical_space'].unique()):
         index=False
     )"
 ```
+
+## Calculate additional similarity metrics for novelty
+
+In addition to the previously computed Tversky similarity, compute the Tanimoto and Maximum Common Substructure (MCS) similarity metrics for the final set of hits.
+
+Tanimoto
+
+```bash
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/s_aureus/s_aureus_hits.csv \
+    --reference_name train_hits \
+    --metric tanimoto
+
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/chembl/chembl.csv \
+    --reference_name chembl \
+    --metric tanimoto
+```
+
+Asymmetric MCS (normalized by reference molecule size, similar to Tversky normalization)
+
+```bash
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/s_aureus/s_aureus_hits.csv \
+    --reference_name train_hits_asymmetric \
+    --metric mcs \
+    --ring_matches_ring_only \
+    --denominator mol_2
+
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/chembl/chembl.csv \
+    --reference_name chembl_asymmetric \
+    --metric mcs \
+    --ring_matches_ring_only \
+    --denominator mol_2
+```
+
+Symmetric MCS (average normalization by both molecule sizes, similar to Tanimoto normalization)
+
+```bash
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/s_aureus/s_aureus_hits.csv \
+    --reference_name train_hits_symmetric \
+    --metric mcs \
+    --ring_matches_ring_only \
+    --denominator avg
+
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/chembl/chembl.csv \
+    --reference_name chembl_symmetric \
+    --metric mcs \
+    --ring_matches_ring_only \
+    --denominator avg
+```
