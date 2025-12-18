@@ -269,10 +269,10 @@ def generate(
             reaction.id = reaction.reaction_id
 
             if reaction.id == 240790:
-                reaction.post_reactions = None
+                reaction.post_reactions = tuple()
 
             if reaction.id == 271948:
-                reaction.post_reactions = None
+                reaction.post_reactions = tuple()
                 reaction.reactants = reaction.reactants[::-1]
 
     print(f"Using {len(reactions):,} reactions")
