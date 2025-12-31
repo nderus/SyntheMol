@@ -56,7 +56,7 @@ training and prediction of the underlying bioactivity prediction model (Chemprop
 Optionally, create a conda environment.
 
 ```bash
-conda create -y -n synthemol python=3.12
+conda create -y -n synthemol python=3.11
 conda activate synthemol
 ```
 
