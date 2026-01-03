@@ -21,7 +21,7 @@ def filter_molecules(input_file: str):
     abs_df = emi_df[emi_df['Absorption/nm'] >= 0.5]
     print(f"Absorption criteria filtered out {len(emi_df) - len(abs_df)} molecules.")
     print(f"The final size is {len(abs_df)}. {len(df)-len(abs_df)} total molecules were removed.")
-    output_file = input_file.replace(".csv", "_filtered_again.csv")
+    output_file = input_file.replace(".csv", "_filtered.csv")
     abs_df.to_csv(output_file, index=False)
 
     
