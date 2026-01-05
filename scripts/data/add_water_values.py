@@ -10,7 +10,7 @@ def add_water_values(input_file: str):
 
     append_vals = np.full((features['features'].shape[0], 4), values)
     gen_vals = np.concatenate((features['features'], append_vals), axis=1)
-    output_file = input_file.replace('.npz', '_water.npz')
+    output_file = input_file.replace('.npz', '_solvent.npz')
     np.savez(output_file, features=gen_vals)
 
 if __name__ == "__main__":
