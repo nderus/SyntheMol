@@ -18,7 +18,6 @@ from synthemol.constants import (
     SCORE_TYPES,
     OLD_REACTION_ORDER,
     OLD_REACTIONS,
-    OPTIMIZATION_TYPES,
     REACTION_TO_BUILDING_BLOCKS_PATH,
     RL_MODEL_TYPES,
     RL_PREDICTION_TYPES,
@@ -45,6 +44,7 @@ def generate(
     score_fingerprint_types: list[str] | None = None,
     score_names: list[str] | None = None,
     base_score_weights: list[float] | None = None,
+    score_signs: list[Literal[1, -1]] | None = None,
     success_thresholds: list[str] | None = None,
     chemical_spaces: tuple[CHEMICAL_SPACES, ...] = ("real",),
     building_blocks_paths: tuple[Path, ...] = (BUILDING_BLOCKS_PATH,),
@@ -70,7 +70,6 @@ def generate(
     rl_extended_evaluation: bool = False,
     num_workers: int = 0,
     use_gpu: bool = False,
-    optimization: OPTIMIZATION_TYPES = "maximize",
     rng_seed: int = 0,
     no_building_block_diversity: bool = False,
     store_nodes: bool = False,
@@ -102,6 +101,7 @@ def generate(
     :param score_names: List of names for each score. If None, scores will be named "Score 1", "Score 2", etc.
     :param base_score_weights: Initial weights for each score for defining the reward function.
         If None, defaults to equal weights for each score.
+    :param score_signs: Signs (+1 or -1) for each of the scores in order to match the score to the maximization optimization.
     :param success_thresholds: The threshold for each score for defining success of the form ">= 0.5".
         If provided, the score weights will be dynamically set to maximize joint success
         across all scores.
@@ -119,7 +119,7 @@ def generate(
     :param rolling_average_weight: The weight to use for the rolling average of similarity (dynamic temperature)
         and success (dynamic score weights).
     :param rl_model_type: The type of RL model to use. 'mlp' = MLP model. 'chemprop' = Chemprop model. 
-    :param rl_model_fingerprint_types: The corresponding fingerprint type for the RL model. MLP models require the fingerprint type to be defined, 
+    :param rl_model_fingerprint_type: The corresponding fingerprint type for the RL model. MLP models require the fingerprint type to be defined,
         but Chemprop RL models can have a fingerprint type of None. 
     :param rl_model_paths: List of paths with each path pointing to a PT file containing a trained model that will be
         used as the initial weights for the RL models. If None, RL models are trained from scratch.
@@ -136,7 +136,6 @@ def generate(
     :param rl_extended_evaluation: Whether to perform extended evaluation of the RL model after each training step.
     :param num_workers: The number of workers for RL model data loading.
     :param use_gpu: Whether to use GPU for model training/prediction. Only affects PyTorch-based models (not sklearn).
-    :param optimization: Whether to maximize or minimize the score.
     :param rng_seed: Seed for random number generators.
     :param no_building_block_diversity: Whether to turn off the score modification that encourages diverse building blocks.
     :param store_nodes: Whether to store in memory all the nodes of the search tree.
@@ -194,6 +193,7 @@ def generate(
         score_fingerprint_types,
         score_names,
         base_score_weights,
+        score_signs,
         building_blocks_score_columns,
         success_thresholds,
     ]:
@@ -233,6 +233,7 @@ def generate(
             base_score_weights=base_score_weights,
             immutable=False,
             score_names=score_names,
+            score_signs=score_signs,
         )
     else:
         success_comparators = None
@@ -240,6 +241,7 @@ def generate(
             base_score_weights=base_score_weights,
             immutable=True,
             score_names=score_names,
+            score_signs=score_signs,
         )
 
     # Create save directory
@@ -269,10 +271,10 @@ def generate(
             reaction.id = reaction.reaction_id
 
             if reaction.id == 240790:
-                reaction.post_reactions = None
+                reaction.post_reactions = tuple()
 
             if reaction.id == 271948:
-                reaction.post_reactions = None
+                reaction.post_reactions = tuple()
                 reaction.reactants = reaction.reactants[::-1]
 
     print(f"Using {len(reactions):,} reactions")
@@ -405,6 +407,7 @@ def generate(
                 "score_fingerprint_types": score_fingerprint_types,
                 "score_names": score_names,
                 "base_score_weights": base_score_weights,
+                "score_signs": score_signs,
                 "success_thresholds": success_thresholds,
                 "chemical_spaces": chemical_spaces,
                 "building_blocks_paths": building_blocks_paths,
@@ -507,7 +510,7 @@ def generate(
             "extended_evaluation": rl_extended_evaluation,
             "features_type": rl_model_fingerprint_type,
             "features_size": FEATURES_SIZE_MAPPING[rl_model_fingerprint_type],
-            "h2o_solvents": h2o_solvents
+            "h2o_solvents": h2o_solvents,
         }
 
         # Select RL model class and update RL model args
@@ -540,7 +543,6 @@ def generate(
         rl_base_temperature=rl_base_temperature,
         rl_temperature_similarity_target=rl_temperature_similarity_target,
         rl_train_frequency=rl_train_frequency,
-        optimization=optimization,
         reactions=reactions,
         rng_seed=rng_seed,
         no_building_block_diversity=no_building_block_diversity,
@@ -551,6 +553,7 @@ def generate(
         replicate=replicate_mcts,
         wandb_log=wandb_log,
         wavelength_color=wavelength_color,
+        log_path=save_dir / "logs.pkl",
     )
 
     # Search for molecules

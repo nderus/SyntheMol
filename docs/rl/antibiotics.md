@@ -1,7 +1,6 @@
 # Generating Novel Antibiotics with SyntheMol-RL
 
-Instructions for generating antibiotic candidates for _Acinetobacter baumannii_ using SyntheMol-RL from the
-paper [TODO](TODO).
+Instructions for generating antibiotic candidates for _Staphylococcus aureus_ using SyntheMol-RL from the paper [SyntheMol-RL: a flexible reinforcement learning framework for designing novel and synthesizable antibiotics](https://www.biorxiv.org/content/10.1101/2025.05.17.654017v1).
 
 This includes instructions for processing antibiotics data, training antibacterial activity prediction models,
 generating molecules with SyntheMol, and selecting candidates. Assumes relevant data has already been downloaded (
@@ -86,7 +85,7 @@ The file `chembl.csv` contains 1,007 molecules.
 
 ### Solubility data
 
-Aqueous solubility data was obtained from [ADMET-AI](TODO), which preprocessed data from
+Aqueous solubility data was obtained from [ADMET-AI](https://academic.oup.com/bioinformatics/article/40/7/btae416/7698030), which preprocessed data from
 the [Therapeutics Data Commons](https://tdcommons.ai/). This dataset contains 9,982 molecules with aqueous solubility
 measurements in units of log mol/L. The data is saved to `data/solubility/solubility.csv`.
 
@@ -342,7 +341,8 @@ synthemol \
     --save_dir rl/generations/rl_chemprop_rdkit_s_aureus_solubility_dynamic_weights_real_wuxi \
     --n_rollout 10000 \
     --search_type rl \
-    --rl_model_type chemprop_rdkit \
+    --rl_model_type chemprop \
+    --rl_model_fingerprint_type rdkit \
     --rl_model_paths rl/models/s_aureus_chemprop_rdkit/fold_0/model_0/model.pt rl/models/solubility_chemprop_rdkit/fold_0/model_0/model.pt \
     --rl_prediction_types regression regression \
     --use_gpu \
@@ -369,7 +369,8 @@ synthemol \
     --save_dir rl/generations/rl_mlp_rdkit_s_aureus_solubility_dynamic_weights_real_wuxi \
     --n_rollout 10000 \
     --search_type rl \
-    --rl_model_type mlp_rdkit \
+    --rl_model_type mlp \
+    --rl_model_fingerprint_type rdkit \
     --rl_model_paths rl/models/s_aureus_mlp_rdkit/fold_0/model_0/model.pt rl/models/solubility_mlp_rdkit/fold_0/model_0/model.pt \
     --rl_prediction_types regression regression \
     --replicate_rl \
@@ -715,4 +716,64 @@ for chemical_space in sorted(selected['chemical_space'].unique()):
         f'rl/selections/{chemical_space}_molecules_available_clintox.csv',
         index=False
     )"
+```
+
+## Calculate additional similarity metrics for novelty
+
+In addition to the previously computed Tversky similarity, compute the Tanimoto and Maximum Common Substructure (MCS) similarity metrics for the final set of hits.
+
+Tanimoto
+
+```bash
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/s_aureus/s_aureus_hits.csv \
+    --reference_name train_hits \
+    --metric tanimoto
+
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/chembl/chembl.csv \
+    --reference_name chembl \
+    --metric tanimoto
+```
+
+Asymmetric MCS (normalized by reference molecule size, similar to Tversky normalization)
+
+```bash
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/s_aureus/s_aureus_hits.csv \
+    --reference_name train_hits_asymmetric \
+    --metric mcs \
+    --ring_matches_ring_only \
+    --denominator mol_2
+
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/chembl/chembl.csv \
+    --reference_name chembl_asymmetric \
+    --metric mcs \
+    --ring_matches_ring_only \
+    --denominator mol_2
+```
+
+Symmetric MCS (average normalization by both molecule sizes, similar to Tanimoto normalization)
+
+```bash
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/s_aureus/s_aureus_hits.csv \
+    --reference_name train_hits_symmetric \
+    --metric mcs \
+    --ring_matches_ring_only \
+    --denominator avg
+
+chemfunc nearest_neighbor \
+    --data_path rl/selections/final_hits.csv \
+    --reference_data_path rl/data/chembl/chembl.csv \
+    --reference_name chembl_symmetric \
+    --metric mcs \
+    --ring_matches_ring_only \
+    --denominator avg
 ```
