@@ -48,7 +48,6 @@ setup(
         "tqdm",
         "typed-argument-parser>=1.9.0",
         "wandb",
-        "tblite"
     ],
     python_requires=">=3.10",
     classifiers=[

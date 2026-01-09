@@ -1,3 +1,4 @@
+# Runs the calc_homolumo.py script on existing Gaussian output .log files.
 #!/bin/bash
 
 # Define the path to the file containing the list of files
