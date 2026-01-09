@@ -9,7 +9,7 @@ from rdkit.Chem.Crippen import MolLogP
 from rdkit.Chem.QED import qed
 
 
-from synthemol.constants import FINGERPRINT_TYPES, SCORE_TYPES, WAVELENGTH_COLORS
+from synthemol.constants import FINGERPRINT_TYPES, SCORE_TYPES, WAVELENGTH_COLORS, WAVELENGTH_DICT
 from synthemol.generate.score_weights import ScoreWeights
 from synthemol.models import (
     chemprop_load,
@@ -18,8 +18,6 @@ from synthemol.models import (
     sklearn_load,
     sklearn_predict_on_molecule_ensemble,
 )
-
-WAVELENGTH_DICT = {'blue': [450, 495], 'green': [495-570], 'yellow': [570, 590], 'orange': [590, 620]}
 
 class Scorer(ABC):
     """Base class for scoring molecules."""

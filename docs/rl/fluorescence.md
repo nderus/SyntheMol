@@ -233,7 +233,7 @@ python scripts/filter/conjugated_pi_system.py synthemol/resources/building_block
 The separate prediction files were combined into one file for generation using:
 
 ```
-python synthemol/resources/combine_building_blocks.py
+python synthemol/scripts/data/combine_building_blocks.py
 ```
 
 ## Generate molecules with SyntheMol-RL

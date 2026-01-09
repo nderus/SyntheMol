@@ -1,3 +1,4 @@
+"""Adds a column with sp2 network size each molecule to a CSV file."""
 from tap import tapify
 
 from collections import deque
@@ -6,6 +7,11 @@ import sys
 import pandas as pd
 
 def updated_max_sp2_connected_atoms(mol: str) -> int:
+    """Calculates the sp2 network size of a molecule.
+
+    :param mol: SMILES string of the molecule
+    :return: The sp2 network size of the molecule
+    """
     mol = Chem.MolFromSmiles(mol)
     sp2_atoms_idxs = {
         atom.GetIdx() for atom in mol.GetAtoms() if atom.GetHybridization() == Chem.rdchem.HybridizationType.SP2
@@ -40,6 +46,12 @@ def updated_max_sp2_connected_atoms(mol: str) -> int:
     return max_count
 
 def sp2_for_file(input_file: str, smiles_column: str):
+    """Adds a column with sp2 network size to a CSV file.
+
+    :param input_file: Path to the input CSV file
+    :param smiles_column: Name of the column that contains the SMILES strings
+    :return: Path to the output CSV file
+    """
     df = pd.read_csv(input_file)
     df['sp2_net'] = df[smiles_column].apply(updated_max_sp2_connected_atoms)
     output_file = input_file.replace(".csv", "_sp2.csv")

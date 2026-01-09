@@ -1,7 +1,15 @@
-
+"""
+Post-process Gaussian output .log file to extract excited state energies, oscillator strengths, dipole moments, and alpha gaps.
+"""
 from tap import tapify
 
 def extract_energies(lines):
+    """
+    Extracts excited state energies, oscillator strengths, dipole moments, and alpha gaps from a Gaussian output .log file.
+    
+    :param lines: List of lines from the Gaussian output .log file
+    :return: Tuple of lists containing excited state energies, oscillator strengths, dipole moments, and alpha gaps
+    """
     alphaGaps = []
     excited_state_energies = []
     oscillation = []

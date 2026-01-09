@@ -1,8 +1,10 @@
+"""Generates individual CSV files for each cluster of molecules from a CSV of molecules with a column titled 'cluster_label'."""
 import pandas as pd
 from tap import tapify
 
 def create_clusters(input_file: str):
   """Generate individual CSV files for each cluster of molecules from a CSV of molecules.
+
   param: input_file: Path to CSV file with molecules that have been clustered with the chemfunc cluster_molcules function.
   """
 

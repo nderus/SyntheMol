@@ -1,3 +1,4 @@
+"""Combines Enamine REAL building block csv files with different property scores into one file with all property columns (PLQY, Emission/nm, Absorption/nm, sp2_net)."""
 import pandas as pd
 
 building_real_df = pd.read_csv('building_blocks_plqy_score_real_class.csv')

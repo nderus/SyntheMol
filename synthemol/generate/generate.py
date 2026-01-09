@@ -151,7 +151,7 @@ def generate(
     :param wandb_log: Whether to log results to Weights & Biases.
     :param wandb_project_name: The name of the Weights & Biases project to log results to.
     :param wandb_run_name: The name of the Weights & Biases run to log results to.
-    :param wavelength color: The specific wavelength color, if none then visible range. 
+    :param wavelength color: If generating fluorescent molecules, then specify a color to target a specific wavelength, otherwise the whole visible range is targeted if None.
     :param h2o_solvents: Whether to concatenate H2O solvent features with the molecule features during prediction.
     """
     # Convert score_model_paths to Path/None

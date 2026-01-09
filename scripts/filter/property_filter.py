@@ -1,3 +1,4 @@
+"""Filters a CSV of molecules by property thresholds."""
 from tap import tapify
 import pandas as pd
 

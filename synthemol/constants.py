@@ -41,6 +41,7 @@ RL_PREDICTION_TYPES = Literal["classification", "regression"]
 FEATURES_SIZE_MAPPING = {"rdkit": 200, "morgan": 2048}
 OPTIMIZATION_TYPES = Literal["maximize", "minimize"]
 WAVELENGTH_COLORS = Literal["blue", "green", "orange"]
+WAVELENGTH_DICT = {'blue': [450, 495], 'green': [495, 570], 'yellow': [570, 590], 'orange': [590, 620]}
 H2O_FEATURES = [0.681, 0.997, 1.062, 0.025] # SP, SdP, SA, SB from https://pubs.acs.org/doi/10.1021/acs.jcim.0c01203
 OLD_REACTION_ORDER = [
     275592,

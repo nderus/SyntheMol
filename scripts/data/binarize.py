@@ -6,7 +6,15 @@ Example usage: python binarize.py data.csv PLQY 0.5
 import pandas as pd
 import sys, os
 
-def add_binary_column(csv_file):
+def add_binary_column(csv_file: str, column_name: str, threshold: float) -> pd.DataFrame:
+    """
+    Add a binary column to a CSV file based on a threshold value.
+
+    :param csv_file: Path to the input CSV file
+    :param column_name: Name of the column to binarize
+    :param threshold: Threshold value. Values greater than threshold become 1, else 0
+    :return: DataFrame with an additional 'binary' column
+    """
     # Read the CSV file into a DataFrame
     df = pd.read_csv(csv_file)
 

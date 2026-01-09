@@ -1,7 +1,13 @@
+"""Adds water solvent constants (SP, SdP, SA, SB) to a feature file."""
 import numpy as np
 import pandas as pd
 from tap import tapify
+
 def add_water_values(input_file: str):
+    """Concatenates water values (SP, SdP, SA, SB) to a feature file.
+
+    :param input_file: Path to the input feature file.
+    """
     if not input_file.endswith('.npz'):
         raise ValueError('Input file must be a .npz file')
     features = np.load(input_file)
