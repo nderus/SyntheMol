@@ -431,7 +431,6 @@ def generate(
                 "rl_extended_evaluation": rl_extended_evaluation,
                 "h2o_solvents": h2o_solvents,
                 "wavelength_color": wavelength_color,
-                "optimization": optimization,
                 "rng_seed": rng_seed,
                 "no_building_block_diversity": no_building_block_diversity,
                 "store_nodes": store_nodes,
