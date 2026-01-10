@@ -9,7 +9,7 @@ from rdkit.Chem.Crippen import MolLogP
 from rdkit.Chem.QED import qed
 
 
-from synthemol.constants import FINGERPRINT_TYPES, SCORE_TYPES
+from synthemol.constants import FINGERPRINT_TYPES, SCORE_TYPES, WAVELENGTH_COLORS, WAVELENGTH_DICT
 from synthemol.generate.score_weights import ScoreWeights
 from synthemol.models import (
     chemprop_load,
@@ -18,7 +18,6 @@ from synthemol.models import (
     sklearn_load,
     sklearn_predict_on_molecule_ensemble,
 )
-
 
 class Scorer(ABC):
     """Base class for scoring molecules."""
@@ -56,6 +55,48 @@ class CLogPScorer(Scorer):
         """
         return MolLogP(Chem.MolFromSmiles(smiles))
 
+class sp2NetworkScorer(Scorer):
+    """Scores molecules by measuring their longest connected path of sp2 atoms"""
+
+    def __call__(self, smiles: str) -> float:
+        """Scores a molecule with the largest sp2 network of atoms. 
+
+        :param smiles: A SMILES string.
+        :return: The score of the molecule.
+        """
+        mol = Chem.MolFromSmiles(smiles)
+        sp2_atoms_idxs = {
+            atom.GetIdx() for atom in mol.GetAtoms() if atom.GetHybridization() == Chem.rdchem.HybridizationType.SP2
+        }
+
+        # Store neighbors of each SP2 atom to reduce the number of method calls
+        sp2_neighbors = {
+            idx: [
+                neighbor.GetIdx()
+                for neighbor in mol.GetAtomWithIdx(idx).GetNeighbors()
+                if neighbor.GetIdx() in sp2_atoms_idxs
+            ]
+            for idx in sp2_atoms_idxs
+        }
+
+        visited_global = set()
+        max_count = 0
+
+        def dfs(atom_idx: int, visited_local: set) -> int:
+            visited_local.add(atom_idx)
+            visited_global.add(atom_idx)
+
+            for neighbor_idx in sp2_neighbors[atom_idx]:
+                if neighbor_idx not in visited_local:
+                    dfs(neighbor_idx, visited_local)
+
+            return len(visited_local)
+
+        for atom_idx in sp2_atoms_idxs:
+            if atom_idx not in visited_global:
+                max_count = max(max_count, dfs(atom_idx, set()))
+
+        return max_count
 
 class SKLearnScorer(Scorer):
     """Scores molecules using a scikit-learn model or ensemble of models."""
@@ -173,12 +214,42 @@ class ChempropScorer(Scorer):
             h2o_solvents=self.h2o_solvents,
         )
 
+class WaveLengthScorer(ChempropScorer):
+    def __init__(
+        self,
+        model_path: Path,
+        fingerprint_type: FINGERPRINT_TYPES | None = None,
+        device: torch.device = torch.device("cpu"),
+        wavelength_min: int = 420,
+        wavelength_max: int = 750,
+        h2o_solvents: bool = False,
+    ) -> None:
+        super().__init__(
+            model_path=model_path,
+            fingerprint_type=fingerprint_type,
+            device=device,
+            h2o_solvents=h2o_solvents,
+        )
+        self.wavelength_min = wavelength_min
+        self.wavelength_max = wavelength_max
+
+    def __call__(self, smiles: str) -> float:
+        wavelength = super().__call__(smiles=smiles)
+
+        if wavelength >= self.wavelength_min and wavelength <= self.wavelength_max:
+            score = 1
+        else:
+            score = 0
+
+        return score
+
 
 def create_scorer(
     score_type: SCORE_TYPES,
     model_path: Path | None = None,
     fingerprint_type: FINGERPRINT_TYPES | None = None,
     device: torch.device = torch.device("cpu"),
+    wavelength_color: WAVELENGTH_COLORS | None = None,
     h2o_solvents: bool = False,
 ) -> Scorer:
     """Creates a scorer object that scores a molecule.
@@ -210,6 +281,24 @@ def create_scorer(
             raise ValueError("CLogP does not use fingerprints.")
 
         scorer = CLogPScorer()
+    elif score_type == "sp2_network":
+        if model_path is not None:
+            raise ValueError("sp2 length does not use a model path.")
+
+        if fingerprint_type is not None:
+            raise ValueError("sp2 length does not use fingerprints.")
+        
+        scorer = sp2NetworkScorer()
+
+    elif score_type == "wavelength":
+        if model_path is None:
+            raise ValueError("Wavelength requires a model path.")
+        if wavelength_color is None:
+            scorer = WaveLengthScorer(model_path=model_path, fingerprint_type=fingerprint_type, device=device, h2o_solvents=h2o_solvents)
+        else:
+            wavelength_min, wavelength_max = WAVELENGTH_DICT[wavelength_color]
+            scorer = WaveLengthScorer(model_path=model_path, fingerprint_type=fingerprint_type, device=device, wavelength_min=wavelength_min, wavelength_max=wavelength_max, h2o_solvents=h2o_solvents)
+
     elif score_type == "chemprop":
         if model_path is None:
             raise ValueError("Chemprop requires a model path.")
@@ -241,6 +330,7 @@ class MoleculeScorer:
         h2o_solvents: bool = False,
         device: torch.device = torch.device("cpu"),
         smiles_to_scores: dict[str, list[float]] | None = None,
+        wavelength_color: str | None = None,
     ) -> None:
         """Initialize the MoleculeScorer, which contains a collection of one or more individual scorers.
 
@@ -278,6 +368,7 @@ class MoleculeScorer:
                 model_path=model_path,
                 fingerprint_type=fingerprint_type,
                 device=device,
+                wavelength_color=wavelength_color,
                 h2o_solvents=h2o_solvents,
             )
             for score_type, model_path, fingerprint_type in zip(

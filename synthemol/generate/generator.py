@@ -54,6 +54,7 @@ class Generator:
         min_score_weight: float = 0.001,
         replicate: bool = False,
         wandb_log: bool = False,
+        wavelength_color: str | None = None,
         log_path: Path | None = None,
     ) -> None:
         """Creates the Generator.

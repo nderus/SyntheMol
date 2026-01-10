@@ -80,6 +80,7 @@ def generate(
     wandb_log: bool = False,
     wandb_project_name: str = "synthemol",
     wandb_run_name: str | None = None,
+    wavelength_color: str | None = None, 
     h2o_solvents: bool = False,
 ) -> None:
     """Generate molecules combinatorially using a search guided by a molecular property predictor.
@@ -149,6 +150,7 @@ def generate(
     :param wandb_log: Whether to log results to Weights & Biases.
     :param wandb_project_name: The name of the Weights & Biases project to log results to.
     :param wandb_run_name: The name of the Weights & Biases run to log results to.
+    :param wavelength color: If generating fluorescent molecules, then specify a color to target a specific wavelength, otherwise the whole visible range is targeted if None.
     :param h2o_solvents: Whether to concatenate H2O solvent features with the molecule features during prediction.
     """
     # Convert score_model_paths to Path/None
@@ -428,6 +430,7 @@ def generate(
                 "rl_train_epochs": rl_train_epochs,
                 "rl_extended_evaluation": rl_extended_evaluation,
                 "h2o_solvents": h2o_solvents,
+                "wavelength_color": wavelength_color,
                 "rng_seed": rng_seed,
                 "no_building_block_diversity": no_building_block_diversity,
                 "store_nodes": store_nodes,
@@ -487,6 +490,7 @@ def generate(
         h2o_solvents=h2o_solvents,
         device=device,
         smiles_to_scores=building_block_smiles_to_scores,
+        wavelength_color = wavelength_color
     )
 
     # Set up RL model if applicable
@@ -547,6 +551,7 @@ def generate(
         rolling_average_weight=rolling_average_weight,
         replicate=replicate_mcts,
         wandb_log=wandb_log,
+        wavelength_color=wavelength_color,
         log_path=save_dir / "logs.pkl",
     )
 
