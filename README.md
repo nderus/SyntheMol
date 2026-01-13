@@ -42,8 +42,7 @@ Swanson, K., Liu, G., Catacutan, D. B., McLellan, S., Arnold, A., Tu, M., Brown,
 
 SyntheFluor-RL is an adaption of SyntheMol-RL for fluorescent small molecule design. Note that SyntheFluor-RL added 57 reactions to the original 13 reactions from SyntheMol and SyntheMol-RL, for a total of 70 reactions that are now included by default in the code.
 
-Sayana, R., Callon, K., Xu, J., Deutsch, J., Chu, S., Zou, J., Janetzko, J., Shivnaraine, R.V., Swanson, K. [Generating readily synthesizable small molecule fluorophore scaffolds with reinforcement learning
-](https://arxiv.org/abs/2601.07145), _The 2nd Workshop on Generative AI and Biology, ICML_, 2025.
+Sayana, R., Callon, K., Xu, J., Deutsch, J., Chu, S., Zou, J., Janetzko, J., Shivnaraine, R.V., Swanson, K. [Generating readily synthesizable small molecule fluorophore scaffolds with reinforcement learning](https://arxiv.org/abs/2601.07145). _The 2nd Workshop on Generative AI and Biology, ICML_, 2025.
 
 ### Reproducibility
 
