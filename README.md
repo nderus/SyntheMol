@@ -24,15 +24,30 @@ graph neural network or multilayer perceptron. SyntheMol uses two chemical space
 
 Notably, SyntheMol can be easily adapted to use any set of building blocks and reactions.
 
-SyntheMol-RL is described in the following paper, where we applied SyntheMol-RL to design novel antibiotic candidates for the Gram-positive bacterium _Staphylococcus aureus_.
+## References
 
-Swanson, K., Liu, G., Catacutan, D. B., McLellan, S., Arnold, A., Tu, M., Brown, E. D., Zou, J., Stokes, J. M. [SyntheMol-RL: a flexible reinforcement learning framework for designing novel and synthesizable antibiotics](https://www.biorxiv.org/content/10.1101/2025.05.17.654017v1). _bioRxiv_, 2025.
+### SyntheMol
 
-SyntheMol-MCTS is described in the following paper, where we applied SyntheMol to design novel antibiotic candidates for the Gram-negative bacterium _Acinetobacter baumannii_.
+The original version of SyntheMol, which used a Monte Carlo tree search (MCTS) to generate molecules (and is now called SyntheMol-MCTS), is described in the following paper, where we applied SyntheMol to design novel antibiotic candidates for the Gram-negative bacterium _Acinetobacter baumannii_.
 
 Swanson, K., Liu, G., Catacutan, D. B., Arnold, A., Zou, J., Stokes, J. M. [Generative AI for designing and validating easily synthesizable and structurally novel antibiotics](https://www.nature.com/articles/s42256-024-00809-7). _Nature Machine Intelligence_, 2024.
 
-Full details for reproducing the SyntheMol results in both papers are provided in the [docs](docs) directory.
+### SyntheMol-RL
+
+SyntheMol-RL, which is the new default and replaces the MCTS with reinforcement learning (RL), is described in the following paper, where we applied SyntheMol-RL to design novel antibiotic candidates for the Gram-positive bacterium _Staphylococcus aureus_.
+
+Swanson, K., Liu, G., Catacutan, D. B., McLellan, S., Arnold, A., Tu, M., Brown, E. D., Zou, J., Stokes, J. M. [SyntheMol-RL: a flexible reinforcement learning framework for designing novel and synthesizable antibiotics](https://www.biorxiv.org/content/10.1101/2025.05.17.654017v1). _bioRxiv_, 2025.
+
+### SyntheFluor-RL
+
+SyntheFluor-RL is an adaption of SyntheMol-RL for fluorescent small molecule design. Note that SyntheFluor-RL added 57 reactions to the original 13 reactions from SyntheMol and SyntheMol-RL, for a total of 70 reactions that are now included by default in the code.
+
+Sayana, R., Callon, K., Xu, J., Deutsch, J., Chu, S., Zou, J., Janetzko, J., Shivnaraine, R.V., Swanson, K. [Generating readily synthesizable small molecule fluorophore scaffolds with reinforcement learning
+](https://arxiv.org/abs/2601.07145), _The 2nd Workshop on Generative AI and Biology, ICML_, 2025.
+
+### Reproducibility
+
+Full details for reproducing the results from these papers are provided in the [docs](docs) directory.
 
 ## Table of contents
 
