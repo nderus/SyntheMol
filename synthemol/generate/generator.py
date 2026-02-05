@@ -789,8 +789,32 @@ class Generator:
 
                 rollout_stats[f"Joint Success"] = int(int(all(successes)))
 
+                # Capture weights before update (for NF training - weight delta)
+                weights_before = np.array(self.score_weights.weights)
+
                 # Update score weights
                 self.update_score_weights(successes=successes)
+
+                # Log weight deltas (for NF training)
+                weights_after = np.array(self.score_weights.weights)
+                weight_deltas = weights_after - weights_before
+                for score_name, delta in zip(
+                    self.score_weights.score_names, weight_deltas
+                ):
+                    rollout_stats[f"{score_name} Weight Delta"] = float(delta)
+
+                # Log rolling average success rates (internal state for NF training)
+                for score_name, success_rate in zip(
+                    self.score_weights.score_names, self.rolling_average_success_rate
+                ):
+                    rollout_stats[f"{score_name} Rolling Success Rate"] = float(success_rate)
+
+            # Log best molecule SMILES and building blocks for this rollout (for NF training)
+            if best_node.num_molecules == 1:
+                rollout_stats["Best Molecule SMILES"] = best_node.molecules[0]
+                rollout_stats["Building Block IDs"] = list(best_node.unique_building_block_ids)
+                rollout_stats["Num Building Blocks"] = len(best_node.unique_building_block_ids)
+                rollout_stats["Num Reactions"] = best_node.num_reactions
 
             # Add score weights to rollout stats
             for score_name, score_weight in zip(

@@ -1,0 +1,26 @@
+name: synthemol
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.10
+  - rdkit
+  - pytorch
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - networkx
+  - tqdm
+  - matplotlib
+  - seaborn
+  - pip
+  - pip:
+    - chemprop==1.6.1
+    - chemfunc>=1.0.12
+    - descriptastorus
+    - typed-argument-parser>=1.9.0
+    - wandb
+    - gdown
+    - openpyxl
