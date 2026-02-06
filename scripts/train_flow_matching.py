@@ -1,7 +1,14 @@
 #!/usr/bin/env python
-"""Train conditional flow matching model on synthesis routes."""
+"""Train conditional flow matching model on synthesis routes.
+
+Supports:
+- Scaffold-based train/val split (prevents data leakage)
+- Reaction conditioning (optional)
+- Standard random split (fallback)
+"""
 
 import argparse
+import pickle
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -18,8 +25,22 @@ def load_data(
     data_dir: Path,
     test_size: float = 0.1,
     random_state: int = 42,
+    use_scaffold_split: bool = True,
+    use_reactions: bool = True,
 ) -> tuple:
-    """Load route embeddings and properties."""
+    """Load route embeddings, properties, and optionally reaction indices.
+
+    Args:
+        data_dir: Directory containing prepared data
+        test_size: Fraction of data to use for validation (if no scaffold split)
+        random_state: Random seed for reproducibility
+        use_scaffold_split: Whether to use pre-computed scaffold split
+        use_reactions: Whether to load reaction indices
+
+    Returns:
+        Tuple of (train_routes, val_routes, train_props, val_props,
+                  train_reactions, val_reactions, mean, std, num_reactions)
+    """
     print("Loading data...")
     route_embeddings = np.load(data_dir / "route_embeddings.npy")
     properties = np.load(data_dir / "properties.npy")
@@ -27,22 +48,76 @@ def load_data(
     print(f"Route embeddings: {route_embeddings.shape}")
     print(f"Properties: {properties.shape}")
 
+    # Load reaction indices if available
+    reaction_indices = None
+    num_reactions = 124  # Default
+    if use_reactions and (data_dir / "reaction_indices.npy").exists():
+        reaction_indices = np.load(data_dir / "reaction_indices.npy")
+        print(f"Reaction indices: {reaction_indices.shape}")
+
+        # Load reaction mapping to get actual count
+        if (data_dir / "reaction_id_to_idx.pkl").exists():
+            with open(data_dir / "reaction_id_to_idx.pkl", "rb") as f:
+                reaction_id_to_idx = pickle.load(f)
+            num_reactions = len(reaction_id_to_idx)
+            print(f"Number of unique reactions: {num_reactions}")
+
     # Normalize route embeddings (important for flow matching)
-    # Use standardization
     mean = route_embeddings.mean(axis=0, keepdims=True)
     std = route_embeddings.std(axis=0, keepdims=True) + 1e-8
     route_embeddings_norm = (route_embeddings - mean) / std
 
-    # Split
-    train_routes, val_routes, train_props, val_props = train_test_split(
-        route_embeddings_norm, properties,
-        test_size=test_size,
-        random_state=random_state,
+    # Check for pre-computed scaffold split
+    train_indices_path = data_dir / "train_indices.npy"
+    val_indices_path = data_dir / "val_indices.npy"
+
+    if use_scaffold_split and train_indices_path.exists() and val_indices_path.exists():
+        print("Using pre-computed scaffold split...")
+        train_indices = np.load(train_indices_path)
+        val_indices = np.load(val_indices_path)
+
+        train_routes = route_embeddings_norm[train_indices]
+        val_routes = route_embeddings_norm[val_indices]
+        train_props = properties[train_indices]
+        val_props = properties[val_indices]
+
+        if reaction_indices is not None:
+            train_reactions = reaction_indices[train_indices]
+            val_reactions = reaction_indices[val_indices]
+        else:
+            train_reactions = None
+            val_reactions = None
+
+        print(f"Train: {len(train_routes)} (scaffold split), Val: {len(val_routes)}")
+    else:
+        print("Using random train/val split...")
+        if reaction_indices is not None:
+            (
+                train_routes, val_routes,
+                train_props, val_props,
+                train_reactions, val_reactions,
+            ) = train_test_split(
+                route_embeddings_norm, properties, reaction_indices,
+                test_size=test_size,
+                random_state=random_state,
+            )
+        else:
+            train_routes, val_routes, train_props, val_props = train_test_split(
+                route_embeddings_norm, properties,
+                test_size=test_size,
+                random_state=random_state,
+            )
+            train_reactions = None
+            val_reactions = None
+
+        print(f"Train: {len(train_routes)}, Val: {len(val_routes)}")
+
+    return (
+        train_routes, val_routes,
+        train_props, val_props,
+        train_reactions, val_reactions,
+        mean, std, num_reactions,
     )
-
-    print(f"Train: {len(train_routes)}, Val: {len(val_routes)}")
-
-    return train_routes, val_routes, train_props, val_props, mean, std
 
 
 def create_dataloaders(
@@ -50,17 +125,44 @@ def create_dataloaders(
     val_routes: np.ndarray,
     train_props: np.ndarray,
     val_props: np.ndarray,
+    train_reactions: np.ndarray | None = None,
+    val_reactions: np.ndarray | None = None,
     batch_size: int = 128,
 ) -> tuple[DataLoader, DataLoader]:
-    """Create PyTorch dataloaders."""
-    train_dataset = TensorDataset(
-        torch.FloatTensor(train_routes),
-        torch.FloatTensor(train_props),
-    )
-    val_dataset = TensorDataset(
-        torch.FloatTensor(val_routes),
-        torch.FloatTensor(val_props),
-    )
+    """Create PyTorch dataloaders.
+
+    Args:
+        train_routes: Training route embeddings
+        val_routes: Validation route embeddings
+        train_props: Training properties
+        val_props: Validation properties
+        train_reactions: Optional training reaction indices
+        val_reactions: Optional validation reaction indices
+        batch_size: Batch size
+
+    Returns:
+        Tuple of (train_loader, val_loader)
+    """
+    if train_reactions is not None:
+        train_dataset = TensorDataset(
+            torch.FloatTensor(train_routes),
+            torch.FloatTensor(train_props),
+            torch.LongTensor(train_reactions),
+        )
+        val_dataset = TensorDataset(
+            torch.FloatTensor(val_routes),
+            torch.FloatTensor(val_props),
+            torch.LongTensor(val_reactions),
+        )
+    else:
+        train_dataset = TensorDataset(
+            torch.FloatTensor(train_routes),
+            torch.FloatTensor(train_props),
+        )
+        val_dataset = TensorDataset(
+            torch.FloatTensor(val_routes),
+            torch.FloatTensor(val_props),
+        )
 
     train_loader = DataLoader(
         train_dataset,
@@ -86,18 +188,38 @@ def train_epoch(
     train_loader: DataLoader,
     optimizer: torch.optim.Optimizer,
     device: torch.device,
+    use_reactions: bool = False,
 ) -> dict:
-    """Train for one epoch."""
+    """Train for one epoch.
+
+    Args:
+        model: Flow matching model
+        train_loader: Training dataloader
+        optimizer: Optimizer
+        device: Device to use
+        use_reactions: Whether to use reaction conditioning
+
+    Returns:
+        Dictionary with training metrics
+    """
     model.train()
     total_loss = 0.0
     num_batches = 0
 
-    for routes, props in train_loader:
-        routes = routes.to(device)
-        props = props.to(device)
+    for batch in train_loader:
+        if use_reactions and len(batch) == 3:
+            routes, props, reactions = batch
+            routes = routes.to(device)
+            props = props.to(device)
+            reactions = reactions.to(device)
+        else:
+            routes, props = batch[:2]
+            routes = routes.to(device)
+            props = props.to(device)
+            reactions = None
 
         optimizer.zero_grad()
-        loss, metrics = model(routes, props)
+        loss, metrics = model(routes, props, reaction_idx=reactions)
         loss.backward()
 
         # Gradient clipping
@@ -116,17 +238,36 @@ def validate(
     model: ConditionalFlowMatching,
     val_loader: DataLoader,
     device: torch.device,
+    use_reactions: bool = False,
 ) -> dict:
-    """Validate the model."""
+    """Validate the model.
+
+    Args:
+        model: Flow matching model
+        val_loader: Validation dataloader
+        device: Device to use
+        use_reactions: Whether to use reaction conditioning
+
+    Returns:
+        Dictionary with validation metrics
+    """
     model.eval()
     total_loss = 0.0
     num_batches = 0
 
-    for routes, props in val_loader:
-        routes = routes.to(device)
-        props = props.to(device)
+    for batch in val_loader:
+        if use_reactions and len(batch) == 3:
+            routes, props, reactions = batch
+            routes = routes.to(device)
+            props = props.to(device)
+            reactions = reactions.to(device)
+        else:
+            routes, props = batch[:2]
+            routes = routes.to(device)
+            props = props.to(device)
+            reactions = None
 
-        loss, metrics = model(routes, props)
+        loss, metrics = model(routes, props, reaction_idx=reactions)
 
         total_loss += loss.item()
         num_batches += 1
@@ -209,15 +350,64 @@ def main():
     parser.add_argument("--weight_decay", type=float, default=1e-5, help="Weight decay")
     parser.add_argument("--patience", type=int, default=30, help="Early stopping patience")
     parser.add_argument("--device", type=str, default="cuda", help="Device")
+    parser.add_argument(
+        "--use_scaffold_split",
+        action="store_true",
+        default=True,
+        help="Use scaffold-based train/val split (default: True)",
+    )
+    parser.add_argument(
+        "--no_scaffold_split",
+        action="store_true",
+        help="Disable scaffold split, use random split instead",
+    )
+    parser.add_argument(
+        "--use_reactions",
+        action="store_true",
+        default=True,
+        help="Use reaction conditioning (default: True)",
+    )
+    parser.add_argument(
+        "--no_reactions",
+        action="store_true",
+        help="Disable reaction conditioning",
+    )
+    parser.add_argument(
+        "--reaction_embed_dim",
+        type=int,
+        default=64,
+        help="Dimension of reaction embedding",
+    )
 
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Handle negation flags
+    use_scaffold_split = args.use_scaffold_split and not args.no_scaffold_split
+    use_reactions = args.use_reactions and not args.no_reactions
+
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
+    print(f"Scaffold split: {use_scaffold_split}")
+    print(f"Reaction conditioning: {use_reactions}")
 
     # Load data
-    train_routes, val_routes, train_props, val_props, mean, std = load_data(args.data_dir)
+    (
+        train_routes, val_routes,
+        train_props, val_props,
+        train_reactions, val_reactions,
+        mean, std, num_reactions,
+    ) = load_data(
+        args.data_dir,
+        use_scaffold_split=use_scaffold_split,
+        use_reactions=use_reactions,
+    )
+
+    # Check if we actually have reaction data
+    has_reactions = train_reactions is not None and use_reactions
+    if use_reactions and train_reactions is None:
+        print("Warning: Reaction conditioning requested but no reaction data found")
+        has_reactions = False
 
     # Save normalization parameters
     np.save(args.output_dir / "mean.npy", mean)
@@ -226,6 +416,8 @@ def main():
     # Create dataloaders
     train_loader, val_loader = create_dataloaders(
         train_routes, val_routes, train_props, val_props,
+        train_reactions=train_reactions if has_reactions else None,
+        val_reactions=val_reactions if has_reactions else None,
         batch_size=args.batch_size,
     )
 
@@ -237,6 +429,8 @@ def main():
         hidden_dim=args.hidden_dim,
         num_layers=args.num_layers,
         sigma=0.01,  # Small noise for source distribution
+        num_reactions=num_reactions if has_reactions else 124,
+        reaction_embed_dim=args.reaction_embed_dim if has_reactions else 64,
     ).to(device)
 
     num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -266,8 +460,14 @@ def main():
     pbar = tqdm(range(1, args.epochs + 1), desc="Training")
 
     for epoch in pbar:
-        train_metrics = train_epoch(model, train_loader, optimizer, device)
-        val_metrics = validate(model, val_loader, device)
+        train_metrics = train_epoch(
+            model, train_loader, optimizer, device,
+            use_reactions=has_reactions,
+        )
+        val_metrics = validate(
+            model, val_loader, device,
+            use_reactions=has_reactions,
+        )
 
         train_losses.append(train_metrics["loss"])
         val_losses.append(val_metrics["loss"])
@@ -295,6 +495,10 @@ def main():
                     "hidden_dim": args.hidden_dim,
                     "num_layers": args.num_layers,
                     "sigma": 0.01,
+                    "num_reactions": num_reactions if has_reactions else 124,
+                    "reaction_embed_dim": args.reaction_embed_dim if has_reactions else 64,
+                    "use_reactions": has_reactions,
+                    "use_scaffold_split": use_scaffold_split,
                 },
             }, args.output_dir / "best_model.pt")
         else:

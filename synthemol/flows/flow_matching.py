@@ -55,7 +55,7 @@ class VectorFieldNetwork(nn.Module):
     """Neural network that predicts the vector field v(x, t, condition).
 
     Architecture:
-    - Input: x (route embedding), t (time), condition (properties)
+    - Input: x (route embedding), t (time), condition (properties), reaction (optional)
     - Output: v (vector field, same dimension as x)
     """
 
@@ -67,10 +67,14 @@ class VectorFieldNetwork(nn.Module):
         num_layers: int = 6,
         time_embed_dim: int = 128,
         dropout: float = 0.1,
+        num_reactions: int = 124,  # Total number of reaction types
+        reaction_embed_dim: int = 64,  # Dimension of reaction embedding
     ):
         super().__init__()
         self.input_dim = input_dim
         self.cond_dim = cond_dim
+        self.num_reactions = num_reactions
+        self.reaction_embed_dim = reaction_embed_dim
 
         # Time embedding
         self.time_embed = nn.Sequential(
@@ -87,9 +91,12 @@ class VectorFieldNetwork(nn.Module):
             nn.Linear(hidden_dim // 4, hidden_dim // 4),
         )
 
-        # Input projection
+        # Reaction embedding (for reaction-conditioned generation)
+        self.reaction_embed = nn.Embedding(num_reactions, reaction_embed_dim)
+
+        # Input projection (includes reaction embedding dimension)
         self.input_proj = nn.Linear(
-            input_dim + time_embed_dim + hidden_dim // 4,
+            input_dim + time_embed_dim + hidden_dim // 4 + reaction_embed_dim,
             hidden_dim,
         )
 
@@ -110,14 +117,32 @@ class VectorFieldNetwork(nn.Module):
         x: torch.Tensor,  # (batch, input_dim) - noisy route embedding
         t: torch.Tensor,  # (batch,) - time in [0, 1]
         cond: torch.Tensor,  # (batch, cond_dim) - target properties
+        reaction_idx: Optional[torch.Tensor] = None,  # (batch,) - reaction indices
     ) -> torch.Tensor:
-        """Predict vector field at (x, t) conditioned on properties."""
+        """Predict vector field at (x, t) conditioned on properties and reaction.
+
+        Args:
+            x: Noisy route embedding
+            t: Time step in [0, 1]
+            cond: Target properties (activity, qed)
+            reaction_idx: Optional reaction indices for conditioning
+
+        Returns:
+            Predicted vector field
+        """
         # Embed time and condition
         t_emb = self.time_embed(t)
         c_emb = self.cond_embed(cond)
 
+        # Embed reaction (use zeros if not provided)
+        if reaction_idx is not None:
+            r_emb = self.reaction_embed(reaction_idx)
+        else:
+            # Use learned average embedding for generation without reaction conditioning
+            r_emb = torch.zeros(x.size(0), self.reaction_embed_dim, device=x.device)
+
         # Concatenate and project
-        h = torch.cat([x, t_emb, c_emb], dim=-1)
+        h = torch.cat([x, t_emb, r_emb, c_emb], dim=-1)
         h = self.input_proj(h)
 
         # Process through layers
@@ -133,7 +158,7 @@ class ConditionalFlowMatching(nn.Module):
     """Conditional Flow Matching model for synthesis route generation.
 
     Learns to generate synthesis routes (building block pairs) conditioned
-    on target molecular properties (activity, QED).
+    on target molecular properties (activity, QED) and optionally reaction type.
 
     Training:
         1. Sample x_1 from data (route embeddings)
@@ -141,11 +166,11 @@ class ConditionalFlowMatching(nn.Module):
         3. Sample t ~ U(0, 1)
         4. Compute x_t = (1-t)*x_0 + t*x_1 (linear interpolation)
         5. Target vector field: u_t = x_1 - x_0
-        6. Loss: ||v(x_t, t, cond) - u_t||^2
+        6. Loss: ||v(x_t, t, cond, reaction) - u_t||^2
 
     Generation:
         1. Sample x_0 ~ N(0, sigma*I)
-        2. Integrate dx/dt = v(x, t, cond) from t=0 to t=1
+        2. Integrate dx/dt = v(x, t, cond, reaction) from t=0 to t=1
         3. Return x_1 as generated route embedding
     """
 
@@ -156,25 +181,37 @@ class ConditionalFlowMatching(nn.Module):
         hidden_dim: int = 1024,
         num_layers: int = 6,
         sigma: float = 0.001,  # Noise scale for source distribution
+        num_reactions: int = 124,
+        reaction_embed_dim: int = 64,
     ):
         super().__init__()
         self.input_dim = input_dim
         self.cond_dim = cond_dim
         self.sigma = sigma
+        self.num_reactions = num_reactions
+        self.reaction_embed_dim = reaction_embed_dim
 
         self.vector_field = VectorFieldNetwork(
             input_dim=input_dim,
             cond_dim=cond_dim,
             hidden_dim=hidden_dim,
             num_layers=num_layers,
+            num_reactions=num_reactions,
+            reaction_embed_dim=reaction_embed_dim,
         )
 
     def forward(
         self,
         x_1: torch.Tensor,  # (batch, input_dim) - data samples
         cond: torch.Tensor,  # (batch, cond_dim) - conditions
+        reaction_idx: Optional[torch.Tensor] = None,  # (batch,) - reaction indices
     ) -> tuple[torch.Tensor, dict]:
         """Compute flow matching loss.
+
+        Args:
+            x_1: Data samples (route embeddings)
+            cond: Target properties (activity, qed)
+            reaction_idx: Optional reaction indices for conditioning
 
         Returns:
             loss: Scalar loss value
@@ -195,8 +232,8 @@ class ConditionalFlowMatching(nn.Module):
         # Target vector field (derivative of x_t w.r.t. t)
         u_t = x_1 - x_0
 
-        # Predicted vector field
-        v_t = self.vector_field(x_t, t, cond)
+        # Predicted vector field (with optional reaction conditioning)
+        v_t = self.vector_field(x_t, t, cond, reaction_idx=reaction_idx)
 
         # Flow matching loss (MSE)
         loss = ((v_t - u_t) ** 2).mean()
@@ -216,17 +253,19 @@ class ConditionalFlowMatching(nn.Module):
         num_samples: int = 1,
         num_steps: int = 50,
         return_trajectory: bool = False,
+        reaction_idx: Optional[torch.Tensor] = None,  # (batch,) or scalar
     ) -> torch.Tensor | tuple[torch.Tensor, list[torch.Tensor]]:
         """Generate samples by integrating the learned vector field.
 
         Uses Euler method for ODE integration:
-            x_{t+dt} = x_t + dt * v(x_t, t, cond)
+            x_{t+dt} = x_t + dt * v(x_t, t, cond, reaction)
 
         Args:
             cond: Target properties (activity, qed)
             num_samples: Number of samples per condition
             num_steps: Number of integration steps
             return_trajectory: Whether to return intermediate states
+            reaction_idx: Optional reaction indices for conditioning
 
         Returns:
             Generated route embeddings of shape (batch * num_samples, input_dim)
@@ -241,6 +280,13 @@ class ConditionalFlowMatching(nn.Module):
         if num_samples > 1:
             cond = cond.repeat_interleave(num_samples, dim=0)
 
+        # Expand reaction indices if provided
+        if reaction_idx is not None:
+            if reaction_idx.dim() == 0:
+                reaction_idx = reaction_idx.unsqueeze(0)
+            if num_samples > 1:
+                reaction_idx = reaction_idx.repeat_interleave(num_samples, dim=0)
+
         total_samples = batch_size * num_samples
 
         # Start from noise
@@ -252,7 +298,7 @@ class ConditionalFlowMatching(nn.Module):
         dt = 1.0 / num_steps
         for step in range(num_steps):
             t = torch.full((total_samples,), step * dt, device=device)
-            v = self.vector_field(x, t, cond)
+            v = self.vector_field(x, t, cond, reaction_idx=reaction_idx)
             x = x + dt * v
 
             if return_trajectory:
@@ -269,10 +315,21 @@ class ConditionalFlowMatching(nn.Module):
         num_samples: int = 1,
         rtol: float = 1e-5,
         atol: float = 1e-5,
+        reaction_idx: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """Generate samples using adaptive ODE solver (RK45).
 
         More accurate but slower than fixed-step Euler.
+
+        Args:
+            cond: Target properties (activity, qed)
+            num_samples: Number of samples per condition
+            rtol: Relative tolerance for ODE solver
+            atol: Absolute tolerance for ODE solver
+            reaction_idx: Optional reaction indices for conditioning
+
+        Returns:
+            Generated route embeddings
         """
         from scipy.integrate import solve_ivp
 
@@ -285,6 +342,13 @@ class ConditionalFlowMatching(nn.Module):
         if num_samples > 1:
             cond = cond.repeat_interleave(num_samples, dim=0)
 
+        # Expand reaction indices if provided
+        if reaction_idx is not None:
+            if reaction_idx.dim() == 0:
+                reaction_idx = reaction_idx.unsqueeze(0)
+            if num_samples > 1:
+                reaction_idx = reaction_idx.repeat_interleave(num_samples, dim=0)
+
         total_samples = batch_size * num_samples
 
         # Start from noise
@@ -295,7 +359,7 @@ class ConditionalFlowMatching(nn.Module):
         def ode_func(t, x_flat):
             x = torch.tensor(x_flat.reshape(total_samples, -1), device=device, dtype=torch.float32)
             t_tensor = torch.full((total_samples,), t, device=device)
-            v = self.vector_field(x, t_tensor, cond)
+            v = self.vector_field(x, t_tensor, cond, reaction_idx=reaction_idx)
             return v.cpu().numpy().flatten()
 
         # Solve ODE
